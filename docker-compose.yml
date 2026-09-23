@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cyberleek-postgres
+    environment:
+      POSTGRES_DB: cyberleek
+      POSTGRES_USER: cyberleek
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyberleek -d cyberleek"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - cyberleek-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cyberleek-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - cyberleek-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cyberleek-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./engine:/app/engine
+      - ./configs:/app/configs
+      - ./data/uploads:/app/data/uploads
+      - ./data/outputs:/app/data/outputs
+      - ./tests:/app/tests
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://cyberleek:${POSTGRES_PASSWORD:-changeme}@postgres:5432/cyberleek
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/app/data/uploads
+      - OUTPUT_DIR=/app/data/outputs
+      - CAMERA_CONFIG_PATH=/app/configs/camera.yaml
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - cyberleek-network
+
+networks:
+  cyberleek-network:
+    name: cyberleek-network

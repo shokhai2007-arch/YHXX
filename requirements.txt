@@ -11,17 +11,26 @@ PyYAML==6.0.1
 # Testing
 pytest==8.2.2
 pytest-cov==5.0.0
+pytest-asyncio==0.21.1
+httpx==0.27.0
 
-# Type checking (optional, for development)
-# mypy==1.10.0
-# types-requests==2.31.0
+# Phase 2+ Backend
+fastapi==0.110.1
+uvicorn[standard]==0.29.0
+sqlalchemy==2.0.30
+pydantic==2.7.1
+pydantic-settings==2.3.3
+python-multipart==0.0.9
+alembic==1.12.0
+watchfiles==0.21.0
 
-# Phase 2+ dependencies (commented out for Phase 1)
-# fastapi==0.110.1
-# uvicorn[standard]==0.29.0
-# sqlalchemy==2.0.30
-# pydantic==2.7.1
-# pydantic-settings==2.3.3
-# python-multipart==0.0.9
-# aiosqlite==0.19.0
-# alembic==1.12.0
+# PostgreSQL + Redis
+asyncpg==0.29.0
+redis==5.0.1
+
+# Background Jobs (Celery) — Phase 3+
+# celery==5.3.6
+# kombu==5.3.4
+
+# Production
+# gunicorn==22.0.0
