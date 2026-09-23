@@ -1,0 +1,28 @@
+# Camera Configuration — Scene Geometry
+# Used by TrafficPipeline for lane/stop-line/crosswalk definitions
+# All coordinates in pixels (origin top-left) for 1280x720 video
+
+lanes:
+  # Lane 1: leftmost lane (x: 100-400)
+  - [[100, 720], [200, 400], [300, 400], [400, 720]]
+  # Lane 2: middle lane (x: 400-700)
+  - [[400, 720], [500, 400], [600, 400], [700, 720]]
+  # Lane 3: rightmost lane (x: 700-1000)
+  - [[700, 720], [800, 400], [900, 400], [1000, 720]]
+
+stop_lines:
+  # Stop line at intersection (horizontal line across lanes)
+  - [[100, 400], [1000, 400], [1000, 410], [100, 410]]
+
+crosswalks:
+  # Crosswalk before stop line
+  - [[100, 420], [1000, 420], [1000, 460], [100, 460]]
+
+roi:
+  # Region of interest: full frame minus sky
+  - [[0, 200], [1280, 200], [1280, 720], [0, 720]]
+
+# Video properties
+fps: 30.0
+width: 1280
+height: 720

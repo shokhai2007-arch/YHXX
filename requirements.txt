@@ -1,0 +1,27 @@
+# Python Dependencies for CyberLeek Traffic Detection
+# Phase 1 Core: minimal dependencies for judge environment
+
+# Video processing
+opencv-python-headless==4.10.0.84
+ffmpeg-python==0.2.0
+
+# Config parsing
+PyYAML==6.0.1
+
+# Testing
+pytest==8.2.2
+pytest-cov==5.0.0
+
+# Type checking (optional, for development)
+# mypy==1.10.0
+# types-requests==2.31.0
+
+# Phase 2+ dependencies (commented out for Phase 1)
+# fastapi==0.110.1
+# uvicorn[standard]==0.29.0
+# sqlalchemy==2.0.30
+# pydantic==2.7.1
+# pydantic-settings==2.3.3
+# python-multipart==0.0.9
+# aiosqlite==0.19.0
+# alembic==1.12.0
