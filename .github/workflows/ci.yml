@@ -171,13 +171,17 @@ jobs:
           with open('predictions.json') as f:
               data = json.load(f)
           assert isinstance(data, list), 'Output must be a list'
+          valid_labels = ['accident', 'near_miss', 'red_light', 'wrong_way', 'illegal_u_turn',
+                          'stopped_vehicle', 'jaywalking', 'failure_to_yield', 'illegal_turn',
+                          'solid_line_crossing', 'stop_line', 'congestion', 'road_obstacle',
+                          'fire_smoke']
           for item in data:
               assert isinstance(item, list) and len(item) == 3, 'Each item must be [start, end, label]'
               assert isinstance(item[0], (int, float)), 'start_sec must be number'
               assert isinstance(item[1], (int, float)), 'end_sec must be number'
               assert isinstance(item[2], str), 'label must be string'
               assert item[0] < item[1], 'start_sec must be < end_sec'
-              assert item[2] in ['speeding', 'illegal_parking', 'illegal_uturn', 'wrong_way', 'stop_line_crossing'], 'Invalid label'
+              assert item[2] in valid_labels, f'Invalid label: {item[2]}'
           print('✓ Judge output validation passed')
           "
 
