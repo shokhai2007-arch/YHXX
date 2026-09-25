@@ -1,0 +1,33 @@
+{
+  "test_video.mp4": {
+    "duration": 5.0,
+    "fps": 30.0,
+    "events": [
+      [0.5, 4.0, "wrong_way"],
+      [1.0, 3.5, "illegal_turn"],
+      [2.0, 4.5, "near_miss"]
+    ]
+  },
+  "vid_5a52c8c4.mp4": {
+    "duration": 5.0,
+    "fps": 30.0,
+    "events": [
+      [0.8, 3.2, "red_light"],
+      [2.5, 4.8, "stopped_vehicle"]
+    ]
+  },
+  "vid_af37433f.mp4": {
+    "duration": 5.0,
+    "fps": 30.0,
+    "events": [
+      [1.2, 4.0, "solid_line_crossing"]
+    ]
+  },
+  "vid_d6629f86.mp4": {
+    "duration": 5.0,
+    "fps": 30.0,
+    "events": [
+      [0.3, 2.8, "jaywalking"]
+    ]
+  }
+}

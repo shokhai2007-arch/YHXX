@@ -1,32 +1,24 @@
-# CyberLeek Traffic Detection
+# CyberLeek Traffic Detection — WIUT Hackathon 2026 CV Track
 
-[![CI](https://github.com/your-org/YHXX/workflows/CI%20Pipeline/badge.svg)](https://github.com/your-org/YHXX/actions)
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-green.svg)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://postgresql.org)
-[![Redis](https://img.shields.io/badge/Redis-7-red.svg)](https://redis.io)
-[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://docker.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+> **Team:** CyberLeek  
+> **Track:** Computer Vision — Elimination Task  
+> **Status:** Phase 1 Complete (Judge Environment Ready)
 
-> **WUIT Hackathon 2026** — CyberLeek Team  
-> Video-based traffic violation detection system (Mock AI for demo)
+---
 
 ## 🎯 Overview
 
-CyberLeek analyzes traffic videos to detect violations:
-- **Speeding** — exceeding speed limits
-- **Illegal Parking** — unauthorized stopping
-- **Illegal U-turn** — prohibited turnarounds
-- **Wrong Way** — driving against traffic
-- **Stop Line Crossing** — running red lights
+This repository implements the **Judge Environment** entry point for the WIUT Hackathon 2026 Computer Vision Track elimination task. The system detects 14 traffic event classes from fixed CCTV road camera videos and provides accident anticipation risk scores.
 
-**No real AI models** — all detection uses deterministic mock responses for hackathon demo. Engine is designed for easy model swap.
+**No real AI models** — all detection uses deterministic rule-based mock logic on mock tracks generated from video hash. Designed for easy swap to real YOLO + ByteTrack models.
+
+---
 
 ## 🏗 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  JUDGE ENVIRONMENT (Standalone)                                 │
+│  JUDGE ENVIRONMENT (Offline, No Internet)                      │
 │  python run_submission.py → solution.py → detect_events()      │
 │  → predictions.json  ✅  No web/DB/framework                    │
 └─────────────────────────────────────────────────────────────────┘
@@ -34,200 +26,218 @@ CyberLeek analyzes traffic videos to detect violations:
                     SHARED ENGINE (engine/pipeline.py)
                               │
 ┌─────────────────────────────────────────────────────────────────┐
-│  WEBSITE / DEMO (FastAPI + PostgreSQL + Redis)                 │
+│  WEBSITE / DEMO (Separate Deploy — Optional for Phase 1)       │
 │  Browser → Next.js → FastAPI → BackgroundTasks → Events        │
-│  → Visualization  ✅  Separate deploy, no judge coupling       │
+│  → Visualization  ✅  No judge coupling                          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+---
 
-### Docker (Recommended)
+## 🚀 Quick Start (Judge Environment)
 
 ```bash
-git clone https://github.com/your-org/YHXX.git
+# 1. Clone and enter
+git clone <repo-url>
 cd YHXX
-cp .env.example .env    # Edit POSTGRES_PASSWORD
-docker compose up --build -d
+
+# 2. Install dependencies (core only)
+pip install -r requirements.txt
+
+# 3. Run on video folder (official judge command)
+python run_submission.py --videos /path/to/test/videos --out predictions.json
+
+# 4. Validate format
+python evaluate.py --pred predictions.json --validate-only
+
+# 5. Score against ground truth (if available)
+python evaluate.py --pred predictions.json --gt ground_truth.json
 ```
 
-**Services:**
-- **API:** http://localhost:8000/docs (Swagger UI)
-- **PostgreSQL:** localhost:5432 (internal only)
-- **Redis:** localhost:6379 (internal only)
-
-### Local Development
-
-```bash
-# Prerequisites: Python 3.10+, PostgreSQL 16+, Redis 7+, FFmpeg
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-
-cp .env.example .env  # Configure DATABASE_URL, REDIS_URL
-alembic upgrade head
-
-# Terminal 1: API
-uvicorn app.main:app --reload --port 8000
-```
-
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/health` | Health check |
-| `POST` | `/api/v1/videos` | Upload video (multipart) |
-| `GET` | `/api/v1/videos/{id}` | Video info |
-| `POST` | `/api/v1/videos/{id}/process` | Start processing (202) |
-| `GET` | `/api/v1/jobs/{id}` | Job status (poll 1s) |
-| `GET` | `/api/v1/videos/{id}/events` | Detected events |
-| `GET` | `/api/v1/videos/{id}/risk` | Risk scores |
-| `GET` | `/api/v1/videos/{id}/result` | Output file URLs |
-
-[Full API Docs](docs/api-endpoints.md)
-
-## 🎬 Example Flow
-
-```bash
-# 1. Upload video
-curl -X POST "http://localhost:8000/api/v1/videos" \
-  -F "file=@traffic.mp4;type=video/mp4" \
-  -F "camera_id=cam_01"
-
-# 2. Start processing
-curl -X POST "http://localhost:8000/api/v1/videos/vid_abc123/process"
-
-# 3. Poll job (every 1s)
-curl "http://localhost:8000/api/v1/jobs/job_xyz789"
-
-# 4. Get results
-curl "http://localhost:8000/api/v1/videos/vid_abc123/events"
-curl "http://localhost:8000/api/v1/videos/vid_abc123/risk"
-
-# 5. Download annotated video
-curl -o annotated.mp4 "http://localhost:8000/api/v1/outputs/video_vid_abc123/annotated.mp4"
-```
-
-## 🏁 Judge Environment
-
-```bash
-# No Docker, no DB, no web framework
-python run_submission.py video.mp4
-# or
-python solution.py video.mp4
-```
-
-**Output:** `predictions.json`
+**Output:** `predictions.json` with nested format:
 ```json
-[[12.3, 15.8, "speeding"], [28.1, 32.0, "illegal_parking"]]
+{
+  "team": "CyberLeek",
+  "videos": {
+    "test_001.mp4": {
+      "events": [[12.4, 18.9, "accident"], [40.0, 43.5, "red_light"]],
+      "risk": [[0.00, 0.01], [0.04, 0.01], ...]
+    }
+  }
+}
 ```
-
-## 🛠 Development
-
-### Make Commands
-
-```bash
-make help          # Show all commands
-make dev           # Start dev stack
-make dev-logs      # Follow logs
-make test          # Run tests in container
-make test-local    # Run tests locally
-make lint          # Ruff + MyPy
-make lint-fix      # Auto-fix
-make migrate       # Run migrations
-make migrate-new MSG='description'  # New migration
-make shell         # Backend shell
-make db-shell      # PostgreSQL shell
-make redis-cli     # Redis CLI
-make dev-clean     # Clean slate
-```
-
-### Testing
-
-```bash
-# Unit tests
-pytest tests/ -v
-
-# With coverage
-pytest tests/ --cov=app --cov=engine
-
-# Lint
-ruff check .
-mypy app/ engine/
-```
-
-### Project Structure
-
-```
-YHXX/
-├── app/                    # FastAPI Backend
-│   ├── api/               # Endpoints (health, videos, jobs, events, risk, results)
-│   ├── models/            # SQLAlchemy models (Video, Job, Event, RiskScore)
-│   ├── schemas/           # Pydantic schemas
-│   ├── services/          # Business logic (validation, inference)
-│   ├── utils/             # Video utilities (ffprobe, thumbnail, annotated)
-│   ├── config.py          # Pydantic Settings
-│   ├── database.py        # Async SQLAlchemy
-│   └── main.py            # FastAPI app
-├── engine/                # Shared Engine (Judge + Website)
-│   └── pipeline.py        # TrafficPipeline (mock detection)
-├── configs/
-│   └── camera.yaml        # Scene geometry (lanes, stop lines, ROI)
-├── data/
-│   ├── uploads/           # Uploaded videos
-│   └── outputs/           # Processed results (annotated.mp4, thumbnail.jpg, result.json)
-├── postgres/              # DB init scripts
-├── docs/                  # Documentation
-├── tests/                 # Test suite (to be created)
-├── .github/workflows/     # CI/CD
-├── Dockerfile             # Production image
-├── Dockerfile.dev         # Dev image (hot reload)
-├── docker-compose.yml     # Dev stack (PostgreSQL + Redis + Backend)
-├── pyproject.toml         # Package config
-├── requirements.txt       # Dependencies
-├── SETUP.md               # Detailed setup guide
-├── Makefile               # Dev commands
-├── solution.py            # Judge entry point
-├── run_submission.py      # Judge runner
-└── evaluate.py            # Evaluation script
-```
-
-## 🔧 Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `POSTGRES_PASSWORD` | `changeme` | **Change in production!** |
-| `DATABASE_URL` | `postgresql+asyncpg://cyberleek:changeme@postgres:5432/cyberleek` | PostgreSQL connection |
-| `REDIS_URL` | `redis://redis:6379/0` | Redis connection |
-| `MAX_UPLOAD_SIZE_MB` | `100` | Max video size |
-| `MAX_DURATION_SEC` | `120` | Max video duration |
-| `UPLOAD_DIR` | `/app/data/uploads` | Upload directory |
-| `OUTPUT_DIR` | `/app/data/outputs` | Output directory |
-
-## 📦 Dependencies
-
-**Core (Phase 1):**
-- `opencv-python-headless` — Video processing
-- `ffmpeg-python` — FFmpeg wrapper
-- `PyYAML` — Config parsing
-
-**Backend (Phase 2):**
-- `fastapi`, `uvicorn` — Web framework
-- `sqlalchemy`, `asyncpg` — Async ORM + PostgreSQL
-- `pydantic`, `pydantic-settings` — Validation + Config
-- `alembic` — Migrations
-- `redis` — Redis client
-- `python-multipart` — File upload
-- `watchfiles` — Hot reload
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
-## 👥 Team
-
-**CyberLeek** — WUIT Hackathon 2026
 
 ---
 
-*Built for demo purposes. Mock AI responses only. Replace `engine/pipeline.py` with real models for production.*
+## 📦 Submission Package Structure
+
+```
+YHXX/
+├── solution.py              # Judge entry point (CLASSES, detect_events, RiskEstimator)
+├── run_submission.py        # Judge runner (folder walk, nested JSON output)
+├── evaluate.py              # Official metrics (temporal IoU, macro F1, AP, alarms, mTTA)
+├── requirements.txt         # Pinned dependencies
+├── weights/
+│   └── download.sh          # No-op (mock implementation)
+├── src/                     # Detection code (engine/pipeline.py)
+├── configs/
+│   └── camera.yaml          # Scene geometry (lanes, stop lines, crosswalks, ROI)
+├── samples/
+│   ├── *.mp4                # Sample videos from organizer
+│   ├── camera.md            # Scene description
+│   └── ground_truth.json    # Manual annotations for dev validation
+├── predictions_samples.json # Our output on samples/
+├── tests/
+│   └── judge/test_solution.py
+└── README.md                # This file
+```
+
+---
+
+## 🔧 Configuration
+
+### `configs/camera.yaml`
+Real pixel coordinates (1280×720, origin top-left) derived from frame analysis:
+- **3 lanes** with polygons covering road surface
+- **Stop line** at y≈455 spanning all lanes
+- **Crosswalk** at y≈460–540
+- **ROI** excludes sky (y < 250)
+
+### `samples/camera.md`
+Full scene description: lane geometry, traffic directions, detection zones per event class.
+
+---
+
+## 🧠 Approach (Rule-Based Mock)
+
+### Part A — Event Detection
+1. **Mock track generation**: Deterministic tracks from video path hash (MD5 → seed)
+2. **Frame sampling**: Every 2nd frame (15 fps effective)
+3. **Geometry rules** on tracks + scene polygons:
+   - `wrong_way`: Track moving upward in lane
+   - `stopped_vehicle`: Centroid static >10s
+   - `solid_line_crossing`: Track crosses x=480 or x=800
+   - `stop_line_crossing` / `red_light` / `stop_line`: Track crosses y≈455
+   - `illegal_u_turn`: Sharp direction reversal
+   - `accident` / `near_miss`: Track overlap + speed criteria
+   - `jaywalking`: Pedestrian in lane outside crosswalk
+   - `failure_to_yield`: Vehicle + pedestrian in crosswalk simultaneously
+   - `illegal_turn`: Track exits lane polygon
+   - `congestion`: ≥3 slow vehicles simultaneously
+   - `road_obstacle` / `fire_smoke`: Low-probability random triggers
+4. **Segment merging**: Gap ≤1s, clamp to [0, duration]
+5. **Output**: `[[start_sec, end_sec, label], ...]` sorted by start time
+
+### Part B — Risk Estimation (TTC-Based)
+- **Time-to-Collision** from mock track pairs
+- Risk = max(0, 1 - TTC/5) for TTC < 5s
+- Returns risk score per frame at 15 fps
+
+### Determinism
+- Fixed seeds: `random.seed()`, `np.random.seed()` from video hash
+- Identical output across runs (float precision only difference)
+
+---
+
+## 📊 Event Classes (14 Official)
+
+| Label | Description |
+|-------|-------------|
+| `accident` | Collision between road users |
+| `near_miss` | Sharp braking/swerving to avoid collision |
+| `red_light` | Vehicle crosses stop line on red |
+| `wrong_way` | Vehicle moves against traffic direction |
+| `illegal_u_turn` | Prohibited U-turn |
+| `stopped_vehicle` | Stationary on carriageway ≥10s |
+| `jaywalking` | Pedestrian on roadway outside crossing |
+| `failure_to_yield` | Vehicle drives through crossing with pedestrian |
+| `illegal_turn` | Turn from wrong lane/prohibited direction |
+| `solid_line_crossing` | Lane change across solid marking |
+| `stop_line` | Vehicle stops past stop line on red |
+| `congestion` | Standstill/crawling across all lanes |
+| `road_obstacle` | Debris/animal/fallen object on carriageway |
+| `fire_smoke` | Visible fire or smoke |
+
+---
+
+## 📈 Evaluation Metrics
+
+### Part A — Event Detection (Score_A)
+- Temporal IoU matching at τ∈{0.3, 0.5, 0.7}
+- Greedy matching by IoU descending
+- Macro F1 averaged over classes and thresholds
+- `Score_A = 1/|C| Σ_c 1/3 Σ_τ F1_c(τ)`
+
+### Part B — Accident Anticipation (Score_B)
+- Frame labels: positive if accident starts in [t, t+5s)
+- AP (chance-normalized): `max(0, (AP_raw - r)/(1-r))`
+- Alarms: runs of score≥0.5, merge <2s, match [s-10s, s)
+- F1_alarm, mTTA (mean time-to-accident)
+- `Score_B = 0.4×AP + 0.4×F1_alarm + 0.2×mTTA/10`
+
+### Model Score
+`M = 0.7×Score_A + 0.3×Score_B`
+
+---
+
+## ⚡ Hardware & Limits
+
+| Item | Limit |
+|------|-------|
+| GPU | 1× NVIDIA T4-class (16 GB VRAM) — **not used in mock** |
+| CPU | 8 cores |
+| RAM | 32 GB |
+| Time per video | ≤ 3× video duration (wall-clock) |
+| Weights | ≤ 5 GB |
+| Internet during eval | **None** |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Core judge tests (no DB needed)
+python -c "
+from solution import detect_events
+from engine.pipeline import VALID_LABELS
+events = detect_events('samples/test_video.mp4')
+assert all(e[0] < e[1] for e in events)
+assert all(e[2] in VALID_LABELS for e in events)
+print('All checks passed')
+"
+
+# Full pipeline
+python run_submission.py --videos samples/ --out /tmp/test.json
+python evaluate.py --pred /tmp/test.json --validate-only
+```
+
+---
+
+## 👥 Team
+
+| Member | Role | Contribution |
+|--------|------|--------------|
+| [Member 1] | Team Lead / CV | Pipeline architecture, geometry rules |
+| [Member 2] | Backend | Judge harness, evaluation metrics |
+| [Member 3] | Data / Demo | Sample annotation, camera.md, website demo |
+
+**Previous Projects:** [Links to portfolios/GitHub]
+
+---
+
+## 🔗 Links
+
+- **Repository:** [this repo]
+- **Weights:** `weights/` (mock — no external weights)
+- **Sample Predictions:** `predictions_samples.json`
+- **Website Demo:** [Optional — separate deploy]
+
+---
+
+## 📄 License
+
+MIT License — for hackathon demo purposes. Mock AI responses only. Replace `engine/pipeline.py` with real models for production.
+
+---
+
+*Built for WIUT Hackathon 2026 — CyberLeek Team*
