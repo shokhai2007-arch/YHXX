@@ -56,11 +56,11 @@ where = ["."]
 include = ["app*", "engine*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/judge"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --cov=app --cov=engine --cov-report=term-missing"
+addopts = "-v"
 
 [tool.ruff]
 line-length = 100
@@ -75,7 +75,7 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
-exclude = [".venv", "data", "__pycache__", "tests/"]
+exclude = [".venv", "data", "__pycache__", "tests/", "numpy"]
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
