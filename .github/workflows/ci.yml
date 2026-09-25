@@ -140,6 +140,7 @@ jobs:
           docker run -d --name test-backend \
             --network host \
             -e DATABASE_URL=postgresql+asyncpg://cyberleek:changeme@localhost:5432/cyberleek \
+            -e REDIS_URL=redis://localhost:6379/0 \
             cyberleek/backend:prod
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8000/api/v1/health; then
