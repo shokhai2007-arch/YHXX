@@ -12,8 +12,13 @@ from app.database import init_db
 
 def ensure_runtime_directories() -> None:
     """Create runtime directories needed by the application."""
-    Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
-    Path(settings.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    try:
+        Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+        Path(settings.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # In test environments or restricted containers, directories may not be writable.
+        # StaticFiles will fail later with a clearer error if directories don't exist.
+        pass
 
 
 # StaticFiles checks that its directory exists during construction.
