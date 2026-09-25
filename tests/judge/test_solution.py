@@ -8,8 +8,7 @@ from tests.conftest import sample_video_path
 class TestSolutionDetectEvents:
     """Tests for solution.py detect_events function."""
 
-    @pytest.mark.asyncio
-    async def test_detect_events_returns_list(self):
+    def test_detect_events_returns_list(self):
         """Test detect_events returns a list."""
         from solution import detect_events
 
@@ -17,8 +16,7 @@ class TestSolutionDetectEvents:
 
         assert isinstance(events, list)
 
-    @pytest.mark.asyncio
-    async def test_detect_events_structure(self):
+    def test_detect_events_structure(self):
         """Test each event has [start_sec, end_sec, label] structure."""
         from solution import detect_events
 
@@ -32,8 +30,7 @@ class TestSolutionDetectEvents:
             assert isinstance(event[2], str)           # label
             assert event[0] < event[1]                 # start < end
 
-    @pytest.mark.asyncio
-    async def test_detect_events_valid_labels(self):
+    def test_detect_events_valid_labels(self):
         """Test all labels are from valid set."""
         from engine.pipeline import VALID_LABELS
         from solution import detect_events
@@ -43,8 +40,7 @@ class TestSolutionDetectEvents:
         for event in events:
             assert event[2] in VALID_LABELS
 
-    @pytest.mark.asyncio
-    async def test_detect_events_deterministic(self):
+    def test_detect_events_deterministic(self):
         """Test detect_events is deterministic for same input."""
         from solution import detect_events
 
@@ -53,8 +49,7 @@ class TestSolutionDetectEvents:
 
         assert events1 == events2
 
-    @pytest.mark.asyncio
-    async def test_detect_events_empty_for_nonexistent(self):
+    def test_detect_events_empty_for_nonexistent(self):
         """Test behavior with non-existent file."""
         from solution import detect_events
 
@@ -211,8 +206,7 @@ class TestSolutionMain:
 class TestJudgeOutputFormat:
     """Tests to ensure judge output format compliance."""
 
-    @pytest.mark.asyncio
-    async def test_output_matches_judge_schema(self, sample_video_path):
+    def test_output_matches_judge_schema(self, sample_video_path):
         """Test output matches judge expectations exactly."""
         from solution import detect_events
 
@@ -235,8 +229,7 @@ class TestJudgeOutputFormat:
             assert 0 <= event[0] < event[1]
             assert event[1] <= 120  # Max duration from settings
 
-    @pytest.mark.asyncio
-    async def test_output_labels_valid(self, sample_video_path):
+    def test_output_labels_valid(self, sample_video_path):
         """Test all labels are from expected set."""
         from engine.pipeline import VALID_LABELS
         from solution import detect_events
@@ -246,8 +239,7 @@ class TestJudgeOutputFormat:
         for event in events:
             assert event[2] in VALID_LABELS
 
-    @pytest.mark.asyncio
-    async def test_deterministic_across_runs(self, sample_video_path):
+    def test_deterministic_across_runs(self, sample_video_path):
         """Test multiple runs produce identical output."""
         from solution import detect_events
 

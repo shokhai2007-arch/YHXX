@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -59,10 +59,10 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -79,7 +79,7 @@ jobs:
           done
 
       - name: Run tests (judge environment only)
-        run: pytest tests/judge/ -v --import-mode=importlib
+        run: pytest tests/judge/ -v
         env:
           DATABASE_URL: postgresql+asyncpg://cyberleek:changeme@localhost:5432/cyberleek
           REDIS_URL: redis://localhost:6379/0
@@ -94,13 +94,13 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.8.0
 
       - name: Build development image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: Dockerfile.dev
@@ -110,7 +110,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build production image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: Dockerfile
@@ -135,13 +135,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -172,15 +172,15 @@ jobs:
                           'solid_line_crossing', 'stop_line', 'congestion', 'road_obstacle',
                           'fire_smoke']
           for vid, vdata in data['videos'].items():
-              assert 'events' in vdata, f'Video {vid} must have events'
-              assert 'risk' in vdata, f'Video {vid} must have risk'
-              for item in vdata['events']:
-                  assert isinstance(item, list) and len(item) == 3, 'Each item must be [start, end, label]'
-                  assert isinstance(item[0], (int, float)), 'start_sec must be number'
-                  assert isinstance(item[1], (int, float)), 'end_sec must be number'
-                  assert isinstance(item[2], str), 'label must be string'
-                  assert item[0] < item[1], 'start_sec must be < end_sec'
-                  assert item[2] in valid_labels, f'Invalid label: {item[2]}'
+            assert 'events' in vdata, f'Video {vid} must have events'
+            assert 'risk' in vdata, f'Video {vid} must have risk'
+            for item in vdata['events']:
+              assert isinstance(item, list) and len(item) == 3, 'Each item must be [start, end, label]'
+              assert isinstance(item[0], (int, float)), 'start_sec must be number'
+              assert isinstance(item[1], (int, float)), 'end_sec must be number'
+              assert isinstance(item[2], str), 'label must be string'
+              assert item[0] < item[1], 'start_sec must be < end_sec'
+              assert item[2] in valid_labels, f'Invalid label: {item[2]}'
           print('✓ Judge output validation passed')
           "
 

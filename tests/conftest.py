@@ -4,10 +4,10 @@ import subprocess
 
 
 @pytest.fixture(scope="session")
-def sample_video_path() -> Path:
+def sample_video_path() -> str:
     """Generate a small test video using ffmpeg lavfi."""
-    video_path = Path("/tmp/test_video_sample.mp4")
-    if not video_path.exists():
+    video_path = "/tmp/test_video_sample.mp4"
+    if not Path(video_path).exists():
         cmd = [
             "ffmpeg", "-y", "-f", "lavfi",
             "-i", "testsrc=duration=5:size=1280x720:rate=30",
