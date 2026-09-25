@@ -52,9 +52,9 @@ def validate_format(predictions: Any) -> tuple[bool, list[str]]:
 
         start, end, label = item
 
-        if not isinstance(start, (int, float)) or start < 0:
+        if not isinstance(start, int | float) or start < 0:
             errors.append(f"Item {i}: start_sec must be non-negative number")
-        if not isinstance(end, (int, float)) or end < 0:
+        if not isinstance(end, int | float) or end < 0:
             errors.append(f"Item {i}: end_sec must be non-negative number")
         if start >= end:
             errors.append(f"Item {i}: start_sec ({start}) must be < end_sec ({end})")

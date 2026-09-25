@@ -18,7 +18,9 @@ from pathlib import Path
 # Add engine to path for import
 sys.path.insert(0, str(Path(__file__).parent / "engine"))
 
-from engine.pipeline import TrafficPipeline, CLASSES, RiskEstimator
+from engine.pipeline import CLASSES, RiskEstimator, TrafficPipeline
+
+__all__ = ["CLASSES", "RiskEstimator", "detect_events"]
 
 
 def detect_events(video_path: str) -> list[list]:
