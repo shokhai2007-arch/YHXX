@@ -61,6 +61,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.2.2
 
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Set up Python
         uses: actions/setup-python@v5.3.0
         with:

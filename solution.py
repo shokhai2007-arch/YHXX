@@ -44,6 +44,11 @@ def detect_events(video_path: str) -> list[list]:
 
 if __name__ == "__main__":
     # Allow direct execution for testing: python solution.py video.mp4
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage: python solution.py <video_path>")
+        print("Detects traffic events and prints JSON to stdout.")
+        sys.exit(0)
+
     if len(sys.argv) < 2:
         print("Usage: python solution.py <video_path>")
         sys.exit(1)

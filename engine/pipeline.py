@@ -504,7 +504,14 @@ class TrafficPipeline:
 
         Returns:
             List of [start_sec, end_sec, label] events
+
+        Raises:
+            FileNotFoundError: If video_path does not exist.
         """
+        video = Path(video_path)
+        if not video.is_file():
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+
         # Deterministic seed from video path
         seed = self._get_video_seed(video_path)
         random.seed(seed)
