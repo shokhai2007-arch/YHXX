@@ -95,6 +95,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cyberleek
+          POSTGRES_USER: cyberleek
+          POSTGRES_PASSWORD: changeme
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cyberleek -d cyberleek"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -124,14 +137,24 @@ jobs:
 
       - name: Test production image
         run: |
-          docker run --rm -d --name test-backend \
-            -e DATABASE_URL=postgresql+asyncpg://cyberleek:changeme@host.docker.internal:5432/cyberleek \
-            -e REDIS_URL=redis://host.docker.internal:6379/0 \
-            -p 8000:8000 \
+          docker run -d --name test-backend \
+            --network host \
+            -e DATABASE_URL=postgresql+asyncpg://cyberleek:changeme@localhost:5432/cyberleek \
             cyberleek/backend:prod
-          sleep 10
-          curl -f http://localhost:8000/api/v1/health || exit 1
-          docker stop test-backend
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/v1/health; then
+              echo ""
+              echo "Health check passed"
+              docker stop test-backend
+              docker rm test-backend
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Health check failed - container logs:"
+          docker logs test-backend || true
+          docker rm -f test-backend || true
+          exit 1
 
   judge-test:
     name: Judge Environment Test
