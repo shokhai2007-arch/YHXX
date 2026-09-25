@@ -1,12 +1,13 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.api import events, health, jobs, results, risk, videos
 from app.config import settings
 from app.database import init_db
-from app.api import health, videos, jobs, events, risk, results
 
 
 @asynccontextmanager

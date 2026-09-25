@@ -7,13 +7,11 @@ Compares predictions.json against ground truth using official metrics:
 - Part B: AP (chance-normalized), F1_alarm, mTTA
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
-from typing import Any, Optional
-from collections import defaultdict
-
+from typing import Any
 
 # 14 Official Event Classes (from WIUT Hackathon spec)
 CLASSES = [
@@ -383,10 +381,9 @@ def evaluate_part_b(ground_truth: dict, predictions: dict) -> dict:
             for alarm_idx, alarm in enumerate(vid_alarms):
                 if alarm_idx in matched_alarms:
                     continue
-                if s - W <= alarm["start_t"] < s:
-                    if best_start is None or alarm["start_t"] < best_start:
-                        best_start = alarm["start_t"]
-                        best_alarm = alarm_idx
+                if s - W <= alarm["start_t"] < s and (best_start is None or alarm["start_t"] < best_start):
+                    best_start = alarm["start_t"]
+                    best_alarm = alarm_idx
 
             if best_alarm is not None:
                 matched_alarms.add(best_alarm)

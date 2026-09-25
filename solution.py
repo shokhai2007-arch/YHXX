@@ -11,15 +11,14 @@ It must implement:
 No web framework, no database, no background jobs — just pure functions.
 """
 
-import sys
 import json
-import numpy as np
+import sys
 from pathlib import Path
 
 # Add engine to path for import
 sys.path.insert(0, str(Path(__file__).parent / "engine"))
 
-from engine.pipeline import TrafficPipeline, RiskEstimator, CLASSES
+from engine.pipeline import TrafficPipeline, CLASSES, RiskEstimator
 
 
 def detect_events(video_path: str) -> list[list]:

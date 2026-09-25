@@ -4,3 +4,5 @@ __pycache__/
 predictions.json
 docs/*.mp4
 ignore/
+data/
+*.rdb

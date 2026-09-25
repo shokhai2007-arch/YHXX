@@ -1,12 +1,10 @@
 import asyncio
 import os
 import subprocess
-import tempfile
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 
 import pytest
-import pytest_asyncio
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -15,8 +13,7 @@ from sqlalchemy.pool import NullPool
 from app.config import Settings
 from app.database import Base, get_db
 from app.main import app
-from app.models import Video, Job, Event, RiskScore
-
+from app.models import Event, Job, RiskScore, Video
 
 # Test database URL (uses separate test database)
 TEST_DATABASE_URL = os.getenv(
@@ -154,7 +151,7 @@ async def create_test_video(
     if video_id is None:
         import uuid
         video_id = f"vid_{uuid.uuid4().hex[:8]}"
-    
+
     video = Video(
         id=video_id,
         filename=filename,
@@ -180,7 +177,7 @@ async def create_test_job(
     if job_id is None:
         import uuid
         job_id = f"job_{uuid.uuid4().hex[:8]}"
-    
+
     job = Job(
         id=job_id,
         video_id=video_id,
@@ -205,7 +202,7 @@ async def create_test_events(
             {"start_sec": 10.0, "end_sec": 15.0, "label": "speeding", "track_id": 1, "confidence": 0.9},
             {"start_sec": 20.0, "end_sec": 25.0, "label": "illegal_parking", "track_id": 2, "confidence": 0.85},
         ]
-    
+
     events = []
     for data in events_data:
         event = Event(
@@ -215,7 +212,7 @@ async def create_test_events(
         )
         db.add(event)
         events.append(event)
-    
+
     await db.commit()
     for event in events:
         await db.refresh(event)
@@ -237,7 +234,7 @@ async def create_test_risk(
             "wrong_way": 0.0,
             "stop_line_crossing": 0.0,
         }
-    
+
     risk = RiskScore(
         video_id=video_id,
         overall_risk=overall_risk,

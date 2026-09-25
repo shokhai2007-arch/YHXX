@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+import numpy as np
+
 
 def get_video_duration(video_path: str) -> float:
     """Get video duration in seconds using ffprobe."""
@@ -64,7 +66,7 @@ def create_annotated_video(
     # Load config for ROI
     roi = [[0, 0], [width, 0], [width, height], [0, height]]
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
             if config and 'roi' in config:
                 roi = config['roi']
@@ -111,6 +113,3 @@ def create_annotated_video(
     cap.release()
     out.release()
     return True
-
-
-import numpy as np

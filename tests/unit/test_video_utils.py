@@ -1,12 +1,10 @@
-import pytest
-from unittest.mock import patch, MagicMock
 from pathlib import Path
-import tempfile
+from unittest.mock import MagicMock, patch
 
 from app.utils.video_utils import (
-    get_video_duration,
-    create_thumbnail,
     create_annotated_video,
+    create_thumbnail,
+    get_video_duration,
 )
 
 
@@ -20,7 +18,7 @@ class TestGetVideoDuration:
             returncode=0,
             stdout="45.5\n"
         )
-        
+
         duration = get_video_duration("/fake/video.mp4")
         assert duration == 45.5
 
@@ -31,7 +29,7 @@ class TestGetVideoDuration:
             returncode=1,
             stderr="error"
         )
-        
+
         duration = get_video_duration("/fake/video.mp4")
         assert duration == 60.0
 
@@ -42,7 +40,7 @@ class TestGetVideoDuration:
             returncode=0,
             stdout="invalid\n"
         )
-        
+
         duration = get_video_duration("/fake/video.mp4")
         assert duration == 60.0
 
@@ -51,7 +49,7 @@ class TestGetVideoDuration:
         """Test subprocess timeout returns default 60.0."""
         import subprocess
         mock_run.side_effect = subprocess.TimeoutExpired("ffprobe", 30)
-        
+
         duration = get_video_duration("/fake/video.mp4")
         assert duration == 60.0
 
@@ -64,17 +62,17 @@ class TestCreateThumbnail:
         """Test thumbnail creation with valid timestamp."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "thumb.jpg")
-        
+
         # Create dummy input file
         Path(video_path).write_bytes(b"fake video")
-        
+
         mock_run.return_value = MagicMock(returncode=0)
-        
+
         result = create_thumbnail(video_path, output_path, timestamp=10.0)
-        
+
         assert result is True
         mock_run.assert_called_once()
-        
+
         # Check ffmpeg command
         call_args = mock_run.call_args[0][0]
         assert call_args[0] == "ffmpeg"
@@ -88,11 +86,11 @@ class TestCreateThumbnail:
         """Test thumbnail creation fails returns False."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "thumb.jpg")
-        
+
         Path(video_path).write_bytes(b"fake video")
-        
+
         mock_run.return_value = MagicMock(returncode=1)
-        
+
         result = create_thumbnail(video_path, output_path)
         assert result is False
 
@@ -101,12 +99,12 @@ class TestCreateThumbnail:
         """Test output directory is created."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "subdir" / "thumb.jpg")
-        
+
         Path(video_path).write_bytes(b"fake video")
         mock_run.return_value = MagicMock(returncode=0)
-        
+
         result = create_thumbnail(video_path, output_path)
-        
+
         assert result is True
         assert Path(output_path).parent.exists()
 
@@ -123,7 +121,7 @@ class TestCreateAnnotatedVideo:
         """Test annotated video creation with events."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "annotated.mp4")
-        
+
         # Mock VideoCapture
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
@@ -133,7 +131,7 @@ class TestCreateAnnotatedVideo:
             4: 720,    # CAP_PROP_FRAME_HEIGHT
             7: 150,    # CAP_PROP_FRAME_COUNT
         }.get(prop, 0)
-        
+
         # Mock frames - return 3 frames then False
         frame = MagicMock()
         frame.shape = (720, 1280, 3)
@@ -141,12 +139,12 @@ class TestCreateAnnotatedVideo:
             (True, frame), (True, frame), (True, frame), (False, None)
         ]
         mock_cap_class.return_value = mock_cap
-        
+
         # Mock VideoWriter
         mock_writer = MagicMock()
         mock_writer_class.return_value = mock_writer
         mock_fourcc.return_value = 0x7634706d  # 'mp4v'
-        
+
         # Mock yaml config
         with patch("yaml.safe_load", return_value={
             "roi": [[0, 200], [1280, 200], [1280, 720], [0, 720]]
@@ -155,9 +153,9 @@ class TestCreateAnnotatedVideo:
                 [10.0, 15.0, "speeding"],
                 [20.0, 25.0, "illegal_parking"],
             ]
-            
+
             result = create_annotated_video(video_path, events, output_path)
-            
+
             assert result is True
             mock_writer.write.assert_called()  # Frames written
             mock_writer.release.assert_called_once()
@@ -168,11 +166,11 @@ class TestCreateAnnotatedVideo:
         """Test returns False when video cannot be opened."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "annotated.mp4")
-        
+
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = False
         mock_cap_class.return_value = mock_cap
-        
+
         result = create_annotated_video(video_path, [], output_path)
         assert result is False
 
@@ -185,28 +183,28 @@ class TestCreateAnnotatedVideo:
         """Test ROI is drawn on frames."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "annotated.mp4")
-        
+
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
         mock_cap.get.side_effect = lambda prop: {
             5: 30.0, 3: 1280, 4: 720, 7: 30
         }.get(prop, 0)
-        
+
         frame = MagicMock()
         frame.shape = (720, 1280, 3)
         mock_cap.read.side_effect = [(True, frame), (False, None)]
         mock_cap_class.return_value = mock_cap
-        
+
         mock_writer = MagicMock()
         mock_writer_class.return_value = mock_writer
         mock_fourcc.return_value = 0x7634706d
-        
+
         with patch("yaml.safe_load", return_value={
             "roi": [[100, 100], [500, 100], [500, 500], [100, 500]]
         }):
             events = []
             result = create_annotated_video(video_path, events, output_path)
-            
+
             assert result is True
             # Verify cv2.polylines was called on frame
 
@@ -223,11 +221,11 @@ class TestCreateAnnotatedVideoEdgeCases:
         """Test events at different timestamps are handled."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "annotated.mp4")
-        
+
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
         mock_cap.get.side_effect = lambda prop: {5: 30.0, 3: 1280, 4: 720, 7: 60}.get(prop, 0)
-        
+
         frame = MagicMock()
         frame.shape = (720, 1280, 3)
         # 3 frames at different times: 0.033s, 0.066s, 0.1s
@@ -235,16 +233,16 @@ class TestCreateAnnotatedVideoEdgeCases:
             (True, frame), (True, frame), (True, frame), (False, None)
         ]
         mock_cap_class.return_value = mock_cap
-        
+
         mock_writer = MagicMock()
         mock_writer_class.return_value = mock_writer
         mock_fourcc.return_value = 0x7634706d
-        
+
         events = [
             [0.0, 0.1, "speeding"],      # Active in first frames
             [5.0, 5.5, "illegal_parking"],  # Not in our 3 frames
         ]
-        
+
         with patch("yaml.safe_load", return_value={"roi": [[0, 0], [1280, 0], [1280, 720], [0, 720]]}):
             result = create_annotated_video(video_path, events, output_path)
             assert result is True
@@ -259,7 +257,7 @@ class TestCreateAnnotatedVideoEdgeCases:
         """Test default ROI when config file missing."""
         video_path = str(tmp_path / "input.mp4")
         output_path = str(tmp_path / "annotated.mp4")
-        
+
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
         mock_cap.get.side_effect = lambda prop: {5: 30.0, 3: 1280, 4: 720, 7: 30}.get(prop, 0)
@@ -267,14 +265,14 @@ class TestCreateAnnotatedVideoEdgeCases:
         frame.shape = (720, 1280, 3)
         mock_cap.read.side_effect = [(True, frame), (False, None)]
         mock_cap_class.return_value = mock_cap
-        
+
         mock_writer = MagicMock()
         mock_writer_class.return_value = mock_writer
         mock_fourcc.return_value = 0x7634706d
-        
+
         # No yaml.safe_load patch - will fail to load and use default
         with patch("builtins.open", side_effect=FileNotFoundError):
             events = []
             result = create_annotated_video(video_path, events, output_path)
-            
+
             assert result is True

@@ -1,0 +1,282 @@
+Metadata-Version: 2.4
+Name: cyberleek
+Version: 1.0.0
+Summary: CyberLeek Traffic Detection — WUIT Hackathon
+Author-email: CyberLeek Team <cyberleek@example.com>
+License-Expression: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: opencv-python-headless==4.10.0.84
+Requires-Dist: ffmpeg-python==0.2.0
+Requires-Dist: PyYAML==6.0.1
+Requires-Dist: fastapi==0.110.1
+Requires-Dist: uvicorn[standard]==0.29.0
+Requires-Dist: sqlalchemy==2.0.30
+Requires-Dist: pydantic==2.7.1
+Requires-Dist: pydantic-settings==2.3.3
+Requires-Dist: python-multipart==0.0.9
+Requires-Dist: alembic==1.12.0
+Requires-Dist: watchfiles==0.21.0
+Requires-Dist: asyncpg==0.29.0
+Requires-Dist: redis==5.0.1
+Provides-Extra: dev
+Requires-Dist: pytest==8.2.2; extra == "dev"
+Requires-Dist: pytest-cov==5.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio==0.23.0; extra == "dev"
+Requires-Dist: httpx==0.27.0; extra == "dev"
+Requires-Dist: ruff==0.4.0; extra == "dev"
+Requires-Dist: mypy==1.10.0; extra == "dev"
+Provides-Extra: celery
+Requires-Dist: celery==5.3.6; extra == "celery"
+Requires-Dist: kombu==5.3.4; extra == "celery"
+Provides-Extra: prod
+Requires-Dist: gunicorn==22.0.0; extra == "prod"
+
+# CyberLeek Traffic Detection — WIUT Hackathon 2026 CV Track
+
+> **Team:** CyberLeek  
+> **Track:** Computer Vision — Elimination Task  
+> **Status:** Phase 1 Complete (Judge Environment Ready)
+
+---
+
+## 🎯 Overview
+
+This repository implements the **Judge Environment** entry point for the WIUT Hackathon 2026 Computer Vision Track elimination task. The system detects 14 traffic event classes from fixed CCTV road camera videos and provides accident anticipation risk scores.
+
+**No real AI models** — all detection uses deterministic rule-based mock logic on mock tracks generated from video hash. Designed for easy swap to real YOLO + ByteTrack models.
+
+---
+
+## 🏗 Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  JUDGE ENVIRONMENT (Offline, No Internet)                      │
+│  python run_submission.py → solution.py → detect_events()      │
+│  → predictions.json  ✅  No web/DB/framework                    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                    SHARED ENGINE (engine/pipeline.py)
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│  WEBSITE / DEMO (Separate Deploy — Optional for Phase 1)       │
+│  Browser → Next.js → FastAPI → BackgroundTasks → Events        │
+│  → Visualization  ✅  No judge coupling                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Quick Start (Judge Environment)
+
+```bash
+# 1. Clone and enter
+git clone <repo-url>
+cd YHXX
+
+# 2. Install dependencies (core only)
+pip install -r requirements.txt
+
+# 3. Run on video folder (official judge command)
+python run_submission.py --videos /path/to/test/videos --out predictions.json
+
+# 4. Validate format
+python evaluate.py --pred predictions.json --validate-only
+
+# 5. Score against ground truth (if available)
+python evaluate.py --pred predictions.json --gt ground_truth.json
+```
+
+**Output:** `predictions.json` with nested format:
+```json
+{
+  "team": "CyberLeek",
+  "videos": {
+    "test_001.mp4": {
+      "events": [[12.4, 18.9, "accident"], [40.0, 43.5, "red_light"]],
+      "risk": [[0.00, 0.01], [0.04, 0.01], ...]
+    }
+  }
+}
+```
+
+---
+
+## 📦 Submission Package Structure
+
+```
+YHXX/
+├── solution.py              # Judge entry point (CLASSES, detect_events, RiskEstimator)
+├── run_submission.py        # Judge runner (folder walk, nested JSON output)
+├── evaluate.py              # Official metrics (temporal IoU, macro F1, AP, alarms, mTTA)
+├── requirements.txt         # Pinned dependencies
+├── weights/
+│   └── download.sh          # No-op (mock implementation)
+├── src/                     # Detection code (engine/pipeline.py)
+├── configs/
+│   └── camera.yaml          # Scene geometry (lanes, stop lines, crosswalks, ROI)
+├── samples/
+│   ├── *.mp4                # Sample videos from organizer
+│   ├── camera.md            # Scene description
+│   └── ground_truth.json    # Manual annotations for dev validation
+├── predictions_samples.json # Our output on samples/
+├── tests/
+│   └── judge/test_solution.py
+└── README.md                # This file
+```
+
+---
+
+## 🔧 Configuration
+
+### `configs/camera.yaml`
+Real pixel coordinates (1280×720, origin top-left) derived from frame analysis:
+- **3 lanes** with polygons covering road surface
+- **Stop line** at y≈455 spanning all lanes
+- **Crosswalk** at y≈460–540
+- **ROI** excludes sky (y < 250)
+
+### `samples/camera.md`
+Full scene description: lane geometry, traffic directions, detection zones per event class.
+
+---
+
+## 🧠 Approach (Rule-Based Mock)
+
+### Part A — Event Detection
+1. **Mock track generation**: Deterministic tracks from video path hash (MD5 → seed)
+2. **Frame sampling**: Every 2nd frame (15 fps effective)
+3. **Geometry rules** on tracks + scene polygons:
+   - `wrong_way`: Track moving upward in lane
+   - `stopped_vehicle`: Centroid static >10s
+   - `solid_line_crossing`: Track crosses x=480 or x=800
+   - `stop_line_crossing` / `red_light` / `stop_line`: Track crosses y≈455
+   - `illegal_u_turn`: Sharp direction reversal
+   - `accident` / `near_miss`: Track overlap + speed criteria
+   - `jaywalking`: Pedestrian in lane outside crosswalk
+   - `failure_to_yield`: Vehicle + pedestrian in crosswalk simultaneously
+   - `illegal_turn`: Track exits lane polygon
+   - `congestion`: ≥3 slow vehicles simultaneously
+   - `road_obstacle` / `fire_smoke`: Low-probability random triggers
+4. **Segment merging**: Gap ≤1s, clamp to [0, duration]
+5. **Output**: `[[start_sec, end_sec, label], ...]` sorted by start time
+
+### Part B — Risk Estimation (TTC-Based)
+- **Time-to-Collision** from mock track pairs
+- Risk = max(0, 1 - TTC/5) for TTC < 5s
+- Returns risk score per frame at 15 fps
+
+### Determinism
+- Fixed seeds: `random.seed()`, `np.random.seed()` from video hash
+- Identical output across runs (float precision only difference)
+
+---
+
+## 📊 Event Classes (14 Official)
+
+| Label | Description |
+|-------|-------------|
+| `accident` | Collision between road users |
+| `near_miss` | Sharp braking/swerving to avoid collision |
+| `red_light` | Vehicle crosses stop line on red |
+| `wrong_way` | Vehicle moves against traffic direction |
+| `illegal_u_turn` | Prohibited U-turn |
+| `stopped_vehicle` | Stationary on carriageway ≥10s |
+| `jaywalking` | Pedestrian on roadway outside crossing |
+| `failure_to_yield` | Vehicle drives through crossing with pedestrian |
+| `illegal_turn` | Turn from wrong lane/prohibited direction |
+| `solid_line_crossing` | Lane change across solid marking |
+| `stop_line` | Vehicle stops past stop line on red |
+| `congestion` | Standstill/crawling across all lanes |
+| `road_obstacle` | Debris/animal/fallen object on carriageway |
+| `fire_smoke` | Visible fire or smoke |
+
+---
+
+## 📈 Evaluation Metrics
+
+### Part A — Event Detection (Score_A)
+- Temporal IoU matching at τ∈{0.3, 0.5, 0.7}
+- Greedy matching by IoU descending
+- Macro F1 averaged over classes and thresholds
+- `Score_A = 1/|C| Σ_c 1/3 Σ_τ F1_c(τ)`
+
+### Part B — Accident Anticipation (Score_B)
+- Frame labels: positive if accident starts in [t, t+5s)
+- AP (chance-normalized): `max(0, (AP_raw - r)/(1-r))`
+- Alarms: runs of score≥0.5, merge <2s, match [s-10s, s)
+- F1_alarm, mTTA (mean time-to-accident)
+- `Score_B = 0.4×AP + 0.4×F1_alarm + 0.2×mTTA/10`
+
+### Model Score
+`M = 0.7×Score_A + 0.3×Score_B`
+
+---
+
+## ⚡ Hardware & Limits
+
+| Item | Limit |
+|------|-------|
+| GPU | 1× NVIDIA T4-class (16 GB VRAM) — **not used in mock** |
+| CPU | 8 cores |
+| RAM | 32 GB |
+| Time per video | ≤ 3× video duration (wall-clock) |
+| Weights | ≤ 5 GB |
+| Internet during eval | **None** |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Core judge tests (no DB needed)
+python -c "
+from solution import detect_events
+from engine.pipeline import VALID_LABELS
+events = detect_events('samples/test_video.mp4')
+assert all(e[0] < e[1] for e in events)
+assert all(e[2] in VALID_LABELS for e in events)
+print('All checks passed')
+"
+
+# Full pipeline
+python run_submission.py --videos samples/ --out /tmp/test.json
+python evaluate.py --pred /tmp/test.json --validate-only
+```
+
+---
+
+## 👥 Team
+
+| Member | Role | Contribution |
+|--------|------|--------------|
+| [Member 1] | Team Lead / CV | Pipeline architecture, geometry rules |
+| [Member 2] | Backend | Judge harness, evaluation metrics |
+| [Member 3] | Data / Demo | Sample annotation, camera.md, website demo |
+
+**Previous Projects:** [Links to portfolios/GitHub]
+
+---
+
+## 🔗 Links
+
+- **Repository:** [this repo]
+- **Weights:** `weights/` (mock — no external weights)
+- **Sample Predictions:** `predictions_samples.json`
+- **Website Demo:** [Optional — separate deploy]
+
+---
+
+## 📄 License
+
+MIT License — for hackathon demo purposes. Mock AI responses only. Replace `engine/pipeline.py` with real models for production.
+
+---
+
+*Built for WIUT Hackathon 2026 — CyberLeek Team*

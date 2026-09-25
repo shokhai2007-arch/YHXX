@@ -1,7 +1,8 @@
-import subprocess
 import os
-from pathlib import Path
-from fastapi import UploadFile, HTTPException
+import subprocess
+
+from fastapi import HTTPException, UploadFile
+
 from app.config import Settings
 
 

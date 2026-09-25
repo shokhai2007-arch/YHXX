@@ -1,14 +1,15 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
+import pytest
+
+from app.models import Event, RiskScore
 from app.services.inference import (
+    VALID_LABELS,
     calculate_and_save_risk,
     save_events,
     update_job_progress,
     write_result_json,
 )
-from app.services.inference import VALID_LABELS
-from app.models import Event, RiskScore
 
 
 @pytest.fixture
@@ -37,14 +38,14 @@ class TestRiskCalculation:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await calculate_and_save_risk("vid_test", sample_events)
-            
+
             # Verify RiskScore was added
             mock_session.add.assert_called_once()
             added_obj = mock_session.add.call_args[0][0]
             assert isinstance(added_obj, RiskScore)
-            
+
             # Check risk values
             assert added_obj.video_id == "vid_test"
             assert added_obj.overall_risk == 0.4  # max of speeding (0.4), illegal_parking (0.2), illegal_uturn (0.2)
@@ -60,9 +61,9 @@ class TestRiskCalculation:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await calculate_and_save_risk("vid_test", empty_events)
-            
+
             added_obj = mock_session.add.call_args[0][0]
             assert added_obj.overall_risk == 0.0
             assert all(v == 0.0 for v in added_obj.by_category.values())
@@ -73,13 +74,13 @@ class TestRiskCalculation:
         """Test risk caps at 1.0 per category."""
         # Create many speeding events
         many_speeding = [[10.0 + i, 12.0 + i, "speeding", 1, 0.9] for i in range(10)]
-        
+
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await calculate_and_save_risk("vid_test", many_speeding)
-            
+
             added_obj = mock_session.add.call_args[0][0]
             assert added_obj.by_category["speeding"] == 1.0  # Capped at 1.0
             assert added_obj.overall_risk == 1.0
@@ -90,9 +91,9 @@ class TestRiskCalculation:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await calculate_and_save_risk("vid_test", sample_events)
-            
+
             added_obj = mock_session.add.call_args[0][0]
             tracks = added_obj.high_risk_tracks
             assert len(tracks) == len(set(tracks))  # All unique
@@ -103,13 +104,13 @@ class TestRiskCalculation:
         """Test high_risk_tracks limited to 5 tracks."""
         # Create events with 7 different track IDs
         many_tracks = [[10.0 + i, 12.0 + i, "speeding", i + 1, 0.9] for i in range(7)]
-        
+
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await calculate_and_save_risk("vid_test", many_tracks)
-            
+
             added_obj = mock_session.add.call_args[0][0]
             assert len(added_obj.high_risk_tracks) == 5
 
@@ -122,7 +123,7 @@ class TestRiskCalculation:
             "wrong_way",
             "stop_line_crossing",
         ]
-        assert VALID_LABELS == expected
+        assert expected == VALID_LABELS
 
 
 class TestSaveEvents:
@@ -134,12 +135,12 @@ class TestSaveEvents:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await save_events("vid_test", "job_test", sample_events)
-            
+
             # Should add 4 events
             assert mock_session.add.call_count == 4
-            
+
             # Check first event
             first_event = mock_session.add.call_args_list[0][0][0]
             assert isinstance(first_event, Event)
@@ -157,13 +158,13 @@ class TestSaveEvents:
         events_minimal = [
             [10.0, 15.0, "speeding"],  # Only 3 elements
         ]
-        
+
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await save_events("vid_test", "job_test", events_minimal)
-            
+
             event = mock_session.add.call_args[0][0]
             assert event.track_id == 1  # Default
             assert event.confidence == 0.9  # Default
@@ -178,9 +179,9 @@ class TestUpdateJobProgress:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await update_job_progress("job_test", 50)
-            
+
             # Verify update was called with progress=50
             mock_session.execute.assert_called_once()
 
@@ -190,9 +191,9 @@ class TestUpdateJobProgress:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await update_job_progress("job_test", 100, status="COMPLETED")
-            
+
             mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
@@ -201,9 +202,9 @@ class TestUpdateJobProgress:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await update_job_progress("job_test", 0, status="FAILED", error="Test error")
-            
+
             mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
@@ -212,9 +213,9 @@ class TestUpdateJobProgress:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await update_job_progress("job_test", 100, status="COMPLETED")
-            
+
             mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
@@ -223,9 +224,9 @@ class TestUpdateJobProgress:
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
-            
+
             await update_job_progress("job_test", 0, status="FAILED")
-            
+
             mock_session.execute.assert_called_once()
 
 
@@ -240,19 +241,19 @@ class TestWriteResultJson:
             "by_category": {"speeding": 0.5},
             "high_risk_tracks": [1],
         }
-        
+
         with patch("app.services.inference.settings") as mock_settings:
             mock_settings.OUTPUT_DIR = str(tmp_path)
-            
+
             await write_result_json("vid_test", sample_events, risk_data, 5.0)
-            
+
             result_file = tmp_path / "video_vid_test" / "result.json"
             assert result_file.exists()
-            
+
             import json
             with open(result_file) as f:
                 data = json.load(f)
-            
+
             assert data["video_id"] == "vid_test"
             assert len(data["events"]) == 4
             assert data["risk"] == risk_data
@@ -263,17 +264,17 @@ class TestWriteResultJson:
     async def test_write_result_json_event_structure(self, sample_events, tmp_path):
         """Test event structure in result.json."""
         risk_data = {"overall_risk": 0.5, "by_category": {}, "high_risk_tracks": []}
-        
+
         with patch("app.services.inference.settings") as mock_settings:
             mock_settings.OUTPUT_DIR = str(tmp_path)
-            
+
             await write_result_json("vid_test", sample_events, risk_data, 5.0)
-            
+
             result_file = tmp_path / "video_vid_test" / "result.json"
             import json
             with open(result_file) as f:
                 data = json.load(f)
-            
+
             event = data["events"][0]
             assert "start_sec" in event
             assert "end_sec" in event

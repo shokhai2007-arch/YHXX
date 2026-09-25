@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
 
 
 class VideoBase(BaseModel):
@@ -18,7 +18,7 @@ class VideoResponse(VideoBase):
     id: str
     status: str
     created_at: datetime
-    processed_at: Optional[datetime] = None
+    processed_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -36,9 +36,9 @@ class JobResponse(JobBase):
     id: str
     status: str
     progress: int
-    error: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    error: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     created_at: datetime
 
     class Config:
@@ -66,7 +66,7 @@ class EventResponse(EventBase):
 
 class EventsListResponse(BaseModel):
     video_id: str
-    events: List[EventResponse]
+    events: list[EventResponse]
     total_count: int
 
 
@@ -81,7 +81,7 @@ class RiskCategory(BaseModel):
 class RiskScoreBase(BaseModel):
     overall_risk: float
     by_category: RiskCategory
-    high_risk_tracks: List[int] = []
+    high_risk_tracks: list[int] = []
 
 
 class RiskScoreResponse(RiskScoreBase):

@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from tests.conftest import create_test_video
 
@@ -16,57 +17,58 @@ class TestFullFlow:
         # 1. Upload video
         with open(sample_video_path, "rb") as f:
             file_content = f.read()
-        
+
         with patch("app.services.validation.validate_video_file", new_callable=AsyncMock) as mock_validate:
             mock_validate.return_value = True
-            
+
             with patch("app.utils.video_utils.get_video_duration", return_value=5.0):
                 response = await async_client.post(
                     "/api/v1/videos",
                     files={"file": ("test.mp4", file_content, "video/mp4")},
                     data={"camera_id": "cam_01"}
                 )
-        
+
         assert response.status_code == 201
         video_data = response.json()
         video_id = video_data["id"]
-        
+
         # 2. Start processing
         with patch("app.services.inference.run_inference", new_callable=AsyncMock) as mock_inference:
             mock_inference.return_value = None
-            
+
             response = await async_client.post(f"/api/v1/videos/{video_id}/process")
-        
+
         assert response.status_code == 202
         job_data = response.json()
         job_id = job_data["job_id"]
-        
+
         # 3. Poll job until completion (simulate)
         # In real scenario, background task updates DB
         # Here we manually update to simulate completion
-        from app.models import Job, Video
         from sqlalchemy import select
-        
+
+        from app.models import Job, Video
+
         # Update job to COMPLETED
         result = await db_session.execute(select(Job).where(Job.id == job_id))
         job = result.scalar_one()
         job.status = "COMPLETED"
         job.progress = 100
-        
+
         result = await db_session.execute(select(Video).where(Video.id == video_id))
         video = result.scalar_one()
         video.status = "COMPLETED"
-        
+
         await db_session.commit()
-        
+
         # 4. Get events
         response = await async_client.get(f"/api/v1/videos/{video_id}/events")
         assert response.status_code == 200
-        
+
         # 5. Get risk
         response = await async_client.get(f"/api/v1/videos/{video_id}/risk")
         assert response.status_code == 200
-        
+
         # 6. Get results
         response = await async_client.get(f"/api/v1/videos/{video_id}/result")
         assert response.status_code == 200
@@ -83,20 +85,19 @@ class TestFullFlow:
             files={"file": ("test.txt", b"not a video", "text/plain")},
             data={"camera_id": "cam_01"}
         )
-        
+
         assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_duplicate_process_rejected(self, async_client, db_session, clean_db):
         """Test starting process on already processing video is rejected."""
-        from tests.conftest import create_test_video
-        
+
         video = await create_test_video(
             db_session,
             video_id="vid_dup123",
             status="PROCESSING"
         )
-        
+
         response = await async_client.post(f"/api/v1/videos/{video.id}/process")
         assert response.status_code == 400
 
@@ -132,27 +133,27 @@ class TestConcurrency:
         """Test multiple concurrent uploads."""
         with open(sample_video_path, "rb") as f:
             file_content = f.read()
-        
+
         with patch("app.services.validation.validate_video_file", new_callable=AsyncMock) as mock_validate:
             mock_validate.return_value = True
-            
+
             with patch("app.utils.video_utils.get_video_duration", return_value=5.0):
                 # Upload 3 videos concurrently
                 import asyncio
-                
+
                 async def upload_one(i):
                     return await async_client.post(
                         "/api/v1/videos",
                         files={"file": (f"test_{i}.mp4", file_content, "video/mp4")},
                         data={"camera_id": "cam_01"}
                     )
-                
+
                 responses = await asyncio.gather(
                     upload_one(1),
                     upload_one(2),
                     upload_one(3)
                 )
-        
+
         assert all(r.status_code == 201 for r in responses)
         video_ids = [r.json()["id"] for r in responses]
         assert len(set(video_ids)) == 3  # All unique
@@ -160,17 +161,16 @@ class TestConcurrency:
     @pytest.mark.asyncio
     async def test_multiple_jobs_for_different_videos(self, async_client, db_session, clean_db):
         """Test multiple jobs can run for different videos."""
-        from tests.conftest import create_test_video
-        
+
         video1 = await create_test_video(db_session, video_id="vid_con1", status="UPLOADED")
         video2 = await create_test_video(db_session, video_id="vid_con2", status="UPLOADED")
-        
+
         with patch("app.services.inference.run_inference", new_callable=AsyncMock) as mock_inference:
             mock_inference.return_value = None
-            
+
             response1 = await async_client.post(f"/api/v1/videos/{video1.id}/process")
             response2 = await async_client.post(f"/api/v1/videos/{video2.id}/process")
-        
+
         assert response1.status_code == 202
         assert response2.status_code == 202
         assert response1.json()["job_id"] != response2.json()["job_id"]
@@ -182,31 +182,30 @@ class TestDataIntegrity:
     @pytest.mark.asyncio
     async def test_video_deletion_cascades(self, async_client, db_session, clean_db):
         """Test deleting video cascades to jobs/events/risk."""
-        from tests.conftest import (
-            create_test_video, create_test_job, create_test_events, create_test_risk
-        )
-        
+        from tests.conftest import create_test_events, create_test_job, create_test_risk
+
         video = await create_test_video(db_session, video_id="vid_cascade", status="COMPLETED")
         job = await create_test_job(db_session, video_id=video.id, job_id="job_cascade")
         events = await create_test_events(db_session, video_id=video.id, job_id=job.id)
         risk = await create_test_risk(db_session, video_id=video.id)
-        
+
         # Delete video
         await db_session.delete(video)
         await db_session.commit()
-        
+
         # Check cascades
-        from app.models import Job, Event, RiskScore
         from sqlalchemy import select
-        
+
+        from app.models import Event, Job, RiskScore
+
         # Jobs should be deleted
         jobs = (await db_session.execute(select(Job).where(Job.video_id == video.id))).scalars().all()
         assert len(jobs) == 0
-        
+
         # Events should be deleted
         events = (await db_session.execute(select(Event).where(Event.video_id == video.id))).scalars().all()
         assert len(events) == 0
-        
+
         # Risk should be deleted
         risks = (await db_session.execute(select(RiskScore).where(RiskScore.video_id == video.id))).scalars().all()
         assert len(risks) == 0
@@ -215,9 +214,9 @@ class TestDataIntegrity:
     async def test_job_progress_bounds(self, async_client, db_session, clean_db):
         """Test job progress stays within 0-100."""
         from tests.conftest import create_test_job
-        
+
         job = await create_test_job(db_session, video_id="vid_test", job_id="job_bounds", progress=0)
-        
+
         # Progress should never exceed 100
         # (This is enforced by application logic, not DB constraint)
         assert 0 <= job.progress <= 100
@@ -231,17 +230,17 @@ class TestValidationEdgeCases:
         """Test upload with special characters in filename."""
         with open(sample_video_path, "rb") as f:
             file_content = f.read()
-        
+
         with patch("app.services.validation.validate_video_file", new_callable=AsyncMock) as mock_validate:
             mock_validate.return_value = True
-            
+
             with patch("app.utils.video_utils.get_video_duration", return_value=5.0):
                 response = await async_client.post(
                     "/api/v1/videos",
                     files={"file": ("test@#$%^&.mp4", file_content, "video/mp4")},
                     data={"camera_id": "cam_01"}
                 )
-        
+
         assert response.status_code == 201
 
     @pytest.mark.asyncio
@@ -249,17 +248,17 @@ class TestValidationEdgeCases:
         """Test camera_id is optional."""
         with open(sample_video_path, "rb") as f:
             file_content = f.read()
-        
+
         with patch("app.services.validation.validate_video_file", new_callable=AsyncMock) as mock_validate:
             mock_validate.return_value = True
-            
+
             with patch("app.utils.video_utils.get_video_duration", return_value=5.0):
                 response = await async_client.post(
                     "/api/v1/videos",
                     files={"file": ("test.mp4", file_content, "video/mp4")},
                     # No camera_id
                 )
-        
+
         assert response.status_code == 201
         assert response.json()["camera_id"] == "cam_01"  # Default
 
@@ -276,19 +275,19 @@ class TestValidationEdgeCases:
                 "-c:v", "libx264", "-pix_fmt", "yuv420p",
                 str(short_video)
             ], capture_output=True)
-        
+
         if short_video.exists():
             with open(short_video, "rb") as f:
                 file_content = f.read()
-            
+
             with patch("app.services.validation.validate_video_file", new_callable=AsyncMock) as mock_validate:
                 mock_validate.return_value = True
-                
+
                 with patch("app.utils.video_utils.get_video_duration", return_value=1.0):
                     response = await async_client.post(
                         "/api/v1/videos",
                         files={"file": ("short.mp4", file_content, "video/mp4")},
                     )
-            
+
             assert response.status_code == 201
             assert response.json()["duration_sec"] == 1.0

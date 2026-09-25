@@ -1,7 +1,7 @@
-import pytest
-from pathlib import Path
 
-from engine.pipeline import TrafficPipeline, CameraConfig, VALID_LABELS
+import pytest
+
+from engine.pipeline import VALID_LABELS, CameraConfig, TrafficPipeline
 
 
 class TestCameraConfig:
@@ -63,12 +63,12 @@ class TestTrafficPipeline:
         # Use fixed seed for reproducibility
         import random
         random.seed(42)
-        
+
         events = pipeline._generate_mock_events(60.0)
-        
+
         assert isinstance(events, list)
         assert 1 <= len(events) <= 5  # num_events range
-        
+
         for event in events:
             assert isinstance(event, list)
             assert len(event) == 3  # [start_sec, end_sec, label]
@@ -83,9 +83,9 @@ class TestTrafficPipeline:
         """Test events are sorted by start time."""
         import random
         random.seed(123)
-        
+
         events = pipeline._generate_mock_events(60.0)
-        
+
         start_times = [e[0] for e in events]
         assert start_times == sorted(start_times)
 
@@ -94,16 +94,16 @@ class TestTrafficPipeline:
         import random
         random.seed(999)
         events1 = pipeline._generate_mock_events(60.0)
-        
+
         random.seed(999)
         events2 = pipeline._generate_mock_events(60.0)
-        
+
         assert events1 == events2
 
     def test_process_video_returns_list(self, pipeline):
         """Test process_video returns list of events."""
         events = pipeline.process_video("/fake/path/video.mp4")
-        
+
         assert isinstance(events, list)
         for event in events:
             assert len(event) == 3
@@ -113,7 +113,7 @@ class TestTrafficPipeline:
         """Test process_video is deterministic for same video path."""
         events1 = pipeline.process_video("/path/same_video.mp4")
         events2 = pipeline.process_video("/path/same_video.mp4")
-        
+
         assert events1 == events2
 
     def test_valid_labels_constant(self):
@@ -125,7 +125,7 @@ class TestTrafficPipeline:
             "wrong_way",
             "stop_line_crossing",
         ]
-        assert VALID_LABELS == expected
+        assert expected == VALID_LABELS
 
 
 class TestTrafficPipelineEdgeCases:
@@ -158,6 +158,6 @@ class TestTrafficPipelineEdgeCases:
             events = pipeline._generate_mock_events(60.0)
             for event in events:
                 seen_labels.add(event[2])
-        
+
         # Should see most labels across different seeds
         assert len(seen_labels) >= 3  # At least 3 different labels

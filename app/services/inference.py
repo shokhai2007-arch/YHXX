@@ -1,17 +1,14 @@
-import asyncio
 import json
-import uuid
 from datetime import datetime
 from pathlib import Path
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+
+from sqlalchemy import update
 
 from app.config import settings
 from app.database import async_session_maker
-from app.models import Video, Job, Event, RiskScore
+from app.models import Event, Job, RiskScore, Video
+from app.utils.video_utils import create_annotated_video, create_thumbnail
 from engine.pipeline import TrafficPipeline
-from app.utils.video_utils import create_thumbnail, create_annotated_video
-
 
 VALID_LABELS = [
     "speeding",
@@ -59,7 +56,7 @@ async def save_events(video_id: str, job_id: str, events: list):
 async def calculate_and_save_risk(video_id: str, events: list):
     """Calculate risk scores and save to database."""
     # Mock risk calculation based on events
-    risk_by_category = {label: 0.0 for label in VALID_LABELS}
+    risk_by_category = dict.fromkeys(VALID_LABELS, 0.0)
     track_ids = set()
 
     for event in events:

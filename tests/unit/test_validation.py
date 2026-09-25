@@ -1,10 +1,11 @@
-import pytest
-from fastapi import UploadFile, HTTPException
-from unittest.mock import AsyncMock, MagicMock, patch
 from io import BytesIO
+from unittest.mock import MagicMock, patch
 
-from app.services.validation import validate_video_file, validate_video_post_upload
+import pytest
+from fastapi import HTTPException, UploadFile
+
 from app.config import Settings
+from app.services.validation import validate_video_file, validate_video_post_upload
 
 
 class TestValidateVideoFile:

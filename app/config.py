@@ -1,6 +1,6 @@
+
+from pydantic import Field, PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings
-from pydantic import PostgresDsn, RedisDsn, Field
-from typing import List
 
 
 class Settings(BaseSettings):
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Video limits
     MAX_UPLOAD_SIZE_MB: int = Field(default=100, validation_alias="MAX_UPLOAD_SIZE_MB")
     MAX_DURATION_SEC: int = Field(default=120, validation_alias="MAX_DURATION_SEC")
-    ALLOWED_MIME_TYPES: List[str] = Field(default=["video/mp4"], validation_alias="ALLOWED_MIME_TYPES")
+    ALLOWED_MIME_TYPES: list[str] = Field(default=["video/mp4"], validation_alias="ALLOWED_MIME_TYPES")
 
     class Config:
         env_file = ".env"

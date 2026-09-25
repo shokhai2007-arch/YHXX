@@ -1,11 +1,13 @@
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import settings
 from app.database import get_db
 from app.models import Video
 from app.schemas import ResultResponse
-from app.config import settings
 
 router = APIRouter(prefix="/api/v1/videos", tags=["results"])
 

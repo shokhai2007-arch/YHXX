@@ -15,18 +15,17 @@ streams frames through RiskEstimator, writes predictions.json with nested format
 }
 """
 
-import sys
-import json
 import argparse
+import json
 import signal
+import subprocess
+import sys
 import time
 from pathlib import Path
-from typing import Optional
-import subprocess
 
 # Import solution module
 sys.path.insert(0, str(Path(__file__).parent))
-from solution import detect_events, RiskEstimator
+from solution import RiskEstimator, detect_events
 
 
 class TimeoutError(Exception):

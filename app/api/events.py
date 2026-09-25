@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models import Video, Event
-from app.schemas import EventsListResponse, EventResponse
+from app.models import Event, Video
+from app.schemas import EventResponse, EventsListResponse
 
 router = APIRouter(prefix="/api/v1/videos", tags=["events"])
 

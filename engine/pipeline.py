@@ -11,16 +11,14 @@ applies geometry rules from camera.yaml to produce events.
 No real AI — deterministic pseudo-random for hackathon demo.
 """
 
+import hashlib
 import json
 import random
-import time
-import hashlib
 import subprocess
-from pathlib import Path
-from typing import Any
 from dataclasses import dataclass
-import numpy as np
+from pathlib import Path
 
+import numpy as np
 
 # 14 Official Event Classes (from WIUT Hackathon spec)
 CLASSES = [

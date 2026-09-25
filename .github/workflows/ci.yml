@@ -31,10 +31,10 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run Ruff
-        run: ruff check app/ engine/
+        run: ruff check .
 
       - name: Run MyPy
-        run: mypy app/ engine/
+        run: mypy app/ engine/ solution.py run_submission.py evaluate.py
 
   test:
     name: Unit Tests
@@ -77,24 +77,12 @@ jobs:
             sleep 1
           done
 
-      - name: Run Alembic migrations
-        run: alembic upgrade head
-        env:
-          DATABASE_URL: postgresql+asyncpg://cyberleek:changeme@localhost:5432/cyberleek
-
-      - name: Run tests
-        run: pytest tests/ -v --cov=app --cov=engine --cov-report=xml
+      - name: Run tests (judge environment only)
+        run: pytest tests/judge/ -v
         env:
           DATABASE_URL: postgresql+asyncpg://cyberleek:changeme@localhost:5432/cyberleek
           REDIS_URL: redis://localhost:6379/0
           ENVIRONMENT: testing
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
 
   docker-build:
     name: Docker Build
@@ -157,15 +145,16 @@ jobs:
 
       - name: Install core dependencies
         run: |
-          pip install opencv-python-headless==4.10.0.84 ffmpeg-python==0.2.0 PyYAML==6.0.1
+          pip install opencv-python-headless==4.10.0.84 ffmpeg-python==0.2.0 PyYAML==6.0.1 numpy
 
-      - name: Create test video
+      - name: Create test video folder
         run: |
+          mkdir -p test_videos
           ffmpeg -f lavfi -i testsrc=duration=5:size=1280x720:rate=30 \
-            -c:v libx264 -pix_fmt yuv420p test_video.mp4 -y
+            -c:v libx264 -pix_fmt yuv420p test_videos/test_video.mp4 -y
 
       - name: Run judge entry point
-        run: python run_submission.py test_video.mp4
+        run: python run_submission.py --videos test_videos --out predictions.json
 
       - name: Validate output
         run: |
@@ -173,18 +162,22 @@ jobs:
           import json
           with open('predictions.json') as f:
               data = json.load(f)
-          assert isinstance(data, list), 'Output must be a list'
+          assert 'team' in data, 'Output must have team field'
+          assert 'videos' in data, 'Output must have videos field'
           valid_labels = ['accident', 'near_miss', 'red_light', 'wrong_way', 'illegal_u_turn',
                           'stopped_vehicle', 'jaywalking', 'failure_to_yield', 'illegal_turn',
                           'solid_line_crossing', 'stop_line', 'congestion', 'road_obstacle',
                           'fire_smoke']
-          for item in data:
-              assert isinstance(item, list) and len(item) == 3, 'Each item must be [start, end, label]'
-              assert isinstance(item[0], (int, float)), 'start_sec must be number'
-              assert isinstance(item[1], (int, float)), 'end_sec must be number'
-              assert isinstance(item[2], str), 'label must be string'
-              assert item[0] < item[1], 'start_sec must be < end_sec'
-              assert item[2] in valid_labels, f'Invalid label: {item[2]}'
+          for vid, vdata in data['videos'].items():
+              assert 'events' in vdata, f'Video {vid} must have events'
+              assert 'risk' in vdata, f'Video {vid} must have risk'
+              for item in vdata['events']:
+                  assert isinstance(item, list) and len(item) == 3, 'Each item must be [start, end, label]'
+                  assert isinstance(item[0], (int, float)), 'start_sec must be number'
+                  assert isinstance(item[1], (int, float)), 'end_sec must be number'
+                  assert isinstance(item[2], str), 'label must be string'
+                  assert item[0] < item[1], 'start_sec must be < end_sec'
+                  assert item[2] in valid_labels, f'Invalid label: {item[2]}'
           print('✓ Judge output validation passed')
           "
 

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models import Video, RiskScore
+from app.models import RiskScore, Video
 from app.schemas import RiskScoreResponse
 
 router = APIRouter(prefix="/api/v1/videos", tags=["risk"])

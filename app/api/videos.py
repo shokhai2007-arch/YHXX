@@ -1,18 +1,18 @@
-import os
-import uuid
 import shutil
+import uuid
 from datetime import datetime
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.models import Video, Job
-from app.schemas import VideoResponse, JobResponse
-from app.services.validation import validate_video_file
+from app.models import Job, Video
+from app.schemas import JobResponse, VideoResponse
 from app.services.inference import run_inference
+from app.services.validation import validate_video_file
 
 router = APIRouter(prefix="/api/v1/videos", tags=["videos"])
 

@@ -1,0 +1,4 @@
+[console_scripts]
+cyberleek-api = app.main:app
+cyberleek-judge = run_submission:main
+cyberleek-pipeline = engine.pipeline:main
