@@ -10,13 +10,23 @@ from app.config import settings
 from app.database import init_db
 
 
+def ensure_runtime_directories() -> None:
+    """Create runtime directories needed by the application."""
+    Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+    Path(settings.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+
+
+# StaticFiles checks that its directory exists during construction.
+# This must run before app.mount().
+ensure_runtime_directories()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     await init_db()
-    # Ensure directories exist
-    Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
-    Path(settings.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    # Ensure directories exist (redundant but safe)
+    ensure_runtime_directories()
     yield
     # Shutdown (if needed)
 
