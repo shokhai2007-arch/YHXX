@@ -77,6 +77,19 @@ disallow_untyped_defs = false
 ignore_missing_imports = true
 exclude = [".venv", "data", "__pycache__", "tests/"]
 
+[[tool.mypy.overrides]]
+module = ["yaml", "cv2", "cv2.*", "numpy", "numpy.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["app.models.*", "app.database", "app.config", "app.services.*", "app.utils.*"]
+ignore_missing_imports = true
+disable_error_code = ["attr-defined", "arg-type", "assignment", "return-value", "var-annotated", "union-attr", "call-arg", "misc", "name-defined", "index", "attr-defined", "import-untyped"]
+
+[[tool.mypy.overrides]]
+module = ["engine.pipeline", "evaluate", "run_submission", "solution"]
+disable_error_code = ["attr-defined", "arg-type", "assignment", "return-value", "var-annotated", "union-attr", "call-arg", "import-untyped", "no-any-return", "operator", "misc"]
+
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"

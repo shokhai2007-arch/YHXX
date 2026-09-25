@@ -83,6 +83,8 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://cyberleek:changeme@localhost:5432/cyberleek
           REDIS_URL: redis://localhost:6379/0
+          UPLOAD_DIR: ${{ runner.temp }}/cyberleek/uploads
+          OUTPUT_DIR: ${{ runner.temp }}/cyberleek/outputs
           ENVIRONMENT: testing
 
   docker-build:
