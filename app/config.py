@@ -11,8 +11,10 @@ class Settings(BaseSettings):
     # Database (PostgreSQL)
     DATABASE_URL: PostgresDsn = Field(validation_alias="DATABASE_URL")
 
-    # Redis
-    REDIS_URL: RedisDsn = Field(validation_alias="REDIS_URL")
+    # Redis (currently unused by the app; kept for future job-queue support)
+    REDIS_URL: RedisDsn = Field(
+        default="redis://localhost:6379/0", validation_alias="REDIS_URL"
+    )
 
     # Paths
     UPLOAD_DIR: str = Field(default="/app/data/uploads", validation_alias="UPLOAD_DIR")
