@@ -46,7 +46,7 @@
           {% if mode == "video" %}
           <video class="absolute inset-0 w-full h-full object-contain" id="video-el" preload="metadata" src="{{ video_src }}"></video>
           {% else %}
-          <video class="absolute inset-0 w-full h-full object-contain" id="video-el" preload="metadata" src="/static/samples/sample_1.mp4"></video>
+          <video class="absolute inset-0 w-full h-full object-contain" id="video-el" preload="metadata" src="{{ video_src }}"></video>
           {% endif %}
           <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-surface-container-lowest/50 pointer-events-none"></div>
           <div class="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded bg-surface-container-lowest/80 backdrop-blur-md text-on-surface">
@@ -243,6 +243,7 @@
   var EVENTS_URL = PAGE_MODE === "video" ? API + "/videos/" + REF_ID + "/events" : null;
   var RESULT_URL = PAGE_MODE === "video" ? API + "/videos/" + REF_ID + "/result" : null;
   var VIDEO_SRC = "{{ video_src }}";
+  var VIDEO_DURATION = {{ video_duration | default(0) }};
 
   var EVENT_META = {
     accident:             { title: "Accident",             slug: "accident",             icon: "car_crash" },
@@ -263,7 +264,7 @@
   var EVENT_ORDER = ["accident", "near_miss", "red_light", "wrong_way", "illegal_u_turn", "stopped_vehicle", "jaywalking", "failure_to_yield", "illegal_turn", "solid_line_crossing", "stop_line", "congestion", "road_obstacle", "fire_smoke"];
   var CRITICAL_LABELS = ["accident", "fire_smoke", "wrong_way", "near_miss"];
 
-  var state = { duration: 0, events: [], risk: null, procTime: null, filter: "all" };
+  var state = { duration: VIDEO_DURATION || 0, events: [], risk: null, procTime: null, filter: "all" };
 
   // ====== Helpers ======
   function $(id) { return document.getElementById(id); }
@@ -292,8 +293,7 @@
     if (video.paused) { video.play(); } else { video.pause(); }
   }
   function seekTo(sec) {
-    if (!state.duration) return;
-    var t = Math.max(0, Math.min(state.duration, sec));
+    var t = Math.max(0, Math.min(state.duration || 3600, sec));
     video.currentTime = t;
     if (video.paused) video.play();
   }
@@ -325,9 +325,12 @@
   video.addEventListener("play", function () { $("play-icon").textContent = "pause"; });
   video.addEventListener("pause", function () { $("play-icon").textContent = "play_arrow"; });
   video.addEventListener("loadedmetadata", function () {
-    state.duration = video.duration;
-    $("duration-text").textContent = fmtTime(video.duration);
-    $("meta-duration").textContent = video.duration.toFixed(1) + " soniya";
+    // Use actual video duration if template didn't provide it, or if it differs significantly
+    if (!VIDEO_DURATION || Math.abs(video.duration - VIDEO_DURATION) > 2) {
+      state.duration = video.duration;
+    }
+    $("duration-text").textContent = fmtTime(state.duration);
+    $("meta-duration").textContent = state.duration.toFixed(1) + " soniya";
     buildTimeline();
   });
   video.addEventListener("timeupdate", updatePlayerUI);

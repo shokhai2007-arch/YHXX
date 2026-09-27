@@ -40,6 +40,7 @@ EVENT_LABELS = [
 ]
 
 SAMPLES_STATIC_DIR = Path("app/static/samples")
+EVENTS_STATIC_DIR = Path("app/static/samples/events")
 
 
 def _load_samples_json() -> dict:
@@ -65,23 +66,42 @@ def _fmt_duration(seconds: float) -> str:
     return f"{m:02d}:{s:02d}"
 
 
+def _get_video_duration(video_path: Path) -> float:
+    """Video fayl davomiyligini ffprobe bilan olish / Get video duration via ffprobe."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)],
+            capture_output=True, text=True, timeout=5
+        )
+        return float(result.stdout.strip()) if result.stdout.strip() else 0.0
+    except Exception:
+        return 0.0
+
+
 def _build_demo_context() -> dict:
     """Demo sahifa konteksti / Demo page context."""
     data = _load_samples_json()
     samples = []
-    for i in (1, 2, 3):
+    for i in (1, 2, 3, 4):
         sid = f"sample_{i}"
-        v = data.get("videos", {}).get(sid, {})
+        video_key = sid + ".mp4"
+        v = data.get("videos", {}).get(video_key, {})
         events = v.get("events", [])
         seen: list[str] = []
         for e in events:
             label = e[2] if isinstance(e, list) else e.get("label", "speeding")
             if label not in seen:
                 seen.append(label)
+        # Duration: from JSON if present, else compute from video file
+        duration = v.get("duration_sec")
+        if duration is None:
+            video_path = SAMPLES_STATIC_DIR / video_key
+            duration = _get_video_duration(video_path) if video_path.exists() else 0.0
         samples.append(
             {
                 "id": sid,
-                "duration_label": _fmt_duration(v.get("duration_sec", 0)),
+                "duration_label": _fmt_duration(duration or 0.0),
                 "event_count": len(events),
                 "badge_labels": [
                     {"title": _label_title(k), "slug": _label_slug(k)} for k in seen[:3]
@@ -220,19 +240,29 @@ async def results_list_page(request: Request, db: AsyncSession = Depends(get_db)
 @router.get("/results/sample/{sample_id}")
 async def sample_results_page(request: Request, sample_id: str):
     data = _load_samples_json()
+    # Normalize sample_id: ensure it has .mp4 extension
+    if not sample_id.endswith(".mp4"):
+        sample_id = sample_id + ".mp4"
     if sample_id not in data.get("videos", {}):
         raise HTTPException(status_code=404, detail="Sample topilmadi")
+    v = data.get("videos", {}).get(sample_id, {})
+    # Duration: from JSON if present, else compute from video file
+    duration = v.get("duration_sec")
+    if duration is None:
+        video_path = SAMPLES_STATIC_DIR / sample_id
+        duration = _get_video_duration(video_path) if video_path.exists() else 0.0
     return templates.TemplateResponse(
         request=request,
         name="results.html",
         context={
             "mode": "sample",
-            "video_src": None,
-            "title": f"{sample_id}.mp4",
+            "video_src": f"/static/samples/{sample_id}",
+            "title": f"{sample_id}",
             "ref_id": sample_id,
             "sample_id": sample_id,
             "camera_label": "Sample Demo Mode",
             "event_labels": _event_labels_context(data, sample_id),
+            "video_duration": duration or 0.0,
         },
     )
 
@@ -256,6 +286,7 @@ async def video_results_page(
             "sample_id": "",
             "camera_label": f"Kamera {video.camera_id}",
             "event_labels": _event_labels_context({}),
+            "video_duration": video.duration_sec,
         },
     )
 
@@ -273,9 +304,9 @@ async def about_page(request: Request):
                 {"name": "FFmpeg + OpenCV", "role": "Video decode/annotate", "icon": "movie"},
             ],
             "team": [
-                {"name": "CyberLeek Member 1", "role": "CV / Detection", "bio": "Pipeline, detector va tracker modullari."},
-                {"name": "CyberLeek Member 2", "role": "Backend / API", "bio": "FastAPI, DB sxemasi va background jobs."},
-                {"name": "CyberLeek Member 3", "role": "Frontend / UI", "bio": "Stitch UI → Jinja2 templates, demo flow."},
+                {"name": "Fayzullo Ubaydullayev", "role": "Dizaynrchi", "bio": "UI/UX dizayn, brending, demo interfeysi.", "image": "/static/team/fayzullo-ubaydullayev.jpg"},
+                {"name": "O'ktamjonov Azimbek", "role": "Modelchi", "bio": "CV modellar, detector/tracker, risk engine.", "image": "/static/team/azimbek-oktamjonov.jpg"},
+                {"name": "Toshpo'latov Shohjahon", "role": "Dasturchi", "bio": "FastAPI backend, pipeline, deployment.", "image": "/static/team/shohjahon-toshpolatov.png"},
             ],
         },
     )

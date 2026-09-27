@@ -60,8 +60,12 @@ Judge: python run_submission.py → solution.detect_events() → predictions.jso
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       {% for m in team %}
       <article class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-2">
-        <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+        <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+          {% if m.image %}
+          <img src="{{ m.image }}" alt="{{ m.name }}" class="w-full h-full object-cover" />
+          {% else %}
           <span class="material-symbols-outlined text-on-primary-container text-[24px]">person</span>
+          {% endif %}
         </div>
         <h3 class="font-label-md text-label-md font-semibold text-on-surface">{{ m.name }}</h3>
         <p class="font-label-sm text-label-sm text-secondary">{{ m.role }}</p>

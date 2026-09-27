@@ -85,6 +85,11 @@ async def init_db():
     try:
         async with engine.begin() as conn:
             await _heal_schemas(conn)
+            # Clear old demo data (truncate tables) for clean hackathon demo
+            await conn.execute(text("""
+                TRUNCATE video, event, job, risk_score RESTART IDENTITY CASCADE
+            """))
+            logger.info("Demo database cleared: video, event, job, risk_score truncated")
     except Exception:
         # Heal muvaffaqiyatsiz bo'lsa ilovani ishga tushirmaymiz — loglaymiz va davom etamiz.
         logger.exception("Schema heal failed — model va DB sxemasi mos emas bo'lishi mumkin")
