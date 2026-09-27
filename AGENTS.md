@@ -40,6 +40,7 @@
 | `docs/backend-api.md` | API contract, DB schema, background jobs, validation |
 | `docs/frontend.md` | Sahifalar, komponentlar, video seek, sample demo mode |
 | `docs/integration.md` | Frontend↔Backend integratsiya rejasi, qarorlar, aniqlangan nomuvofiqliklar |
+| `docs/compliance_analysis.md` | WIUT Hackathon talablari bilan muvofiqlik tahlili, gaplar, reja |
 
 ---
 
@@ -50,7 +51,10 @@
 def detect_events(video_path: str) -> list[list]:
     """
     Returns: [[start_sec, end_sec, label], ...]
-    Labels: speeding, illegal_parking, illegal_uturn, wrong_way, stop_line_crossing
+    Labels (14 official WIUT spec): accident, near_miss, red_light, wrong_way,
+    illegal_u_turn, stopped_vehicle, jaywalking, failure_to_yield,
+    illegal_turn, solid_line_crossing, stop_line, congestion,
+    road_obstacle, fire_smoke
     """
     from engine.pipeline import TrafficPipeline
     return TrafficPipeline(config_path="configs/camera.yaml").process_video(video_path)
@@ -86,14 +90,16 @@ ffmpeg -i video.mp4 -ss 10 -frames:v 1 thumbnail.jpg
 
 ---
 
-## 📂 Repo Structure (Planlangan)
+## 📂 Repo Structure (Hozirgi Holat)
 ```
 /home/neo/Projects/YHXX/
 ├── AGENTS.md
 ├── docs/
 │   ├── architecture.md
 │   ├── backend-api.md
-│   └── frontend.md
+│   ├── frontend.md
+│   ├── integration.md
+│   └── compliance_analysis.md
 ├── solution.py
 ├── run_submission.py
 ├── evaluate.py
@@ -102,13 +108,53 @@ ffmpeg -i video.mp4 -ss 10 -frames:v 1 thumbnail.jpg
 ├── configs/
 │   └── camera.yaml
 ├── requirements.txt
-├── app/              # Phase 2
-├── models/weights/   # Phase 2
-├── data/             # Phase 2
-├── frontend/         # Phase 3
-├── website/          # Phase 3
+├── pyproject.toml
+├── app/
+│   ├── main.py
+│   ├── api/
+│   │   ├── videos.py
+│   │   ├── jobs.py
+│   │   ├── events.py
+│   │   ├── risk.py
+│   │   ├── results.py
+│   │   ├── health.py
+│   │   └── web.py
+│   ├── models/
+│   │   ├── video.py
+│   │   ├── job.py
+│   │   ├── event.py
+│   │   └── risk_score.py
+│   ├── schemas/
+│   ├── services/
+│   │   └── inference.py
+│   ├── utils/
+│   │   └── video_utils.py
+│   ├── templates/          # Jinja2 (Phase 3)
+│   │   ├── base.html
+│   │   ├── landing.html
+│   │   ├── demo.html
+│   │   ├── results.html
+│   │   ├── results_list.html
+│   │   ├── report.html
+│   │   ├── about.html
+│   │   └── 404.html
+│   └── static/
+│       └── samples/        # sample_1-3.mp4 + predictions_samples.json
+├── models/weights/         # Phase 2 (empty - mock AI)
+├── data/
+│   ├── uploads/
+│   ├── outputs/
+│   ├── postgres/
+│   └── redis/
 ├── tests/
-└── .github/workflows/test.yml
+│   ├── judge/
+│   ├── unit/
+│   └── integration/
+├── Dockerfile
+├── Dockerfile.dev
+├── docker-compose.yml
+├── Makefile
+└── .github/workflows/ci.yml
 ```
 
 ---
