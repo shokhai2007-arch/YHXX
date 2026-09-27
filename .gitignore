@@ -5,4 +5,4 @@ predictions.json
 docs/*.mp4
 ignore/
 data/
-*.rdb
+*.rdbstitch_frontend_ui_development/

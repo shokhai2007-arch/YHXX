@@ -5,6 +5,7 @@ import pytest
 from app.models import Event, RiskScore
 from app.services.inference import (
     VALID_LABELS,
+    _sanitize_job_error,
     calculate_and_save_risk,
     save_events,
     update_job_progress,
@@ -12,14 +13,46 @@ from app.services.inference import (
 )
 
 
+class TestSanitizeJobError:
+    """job.error frontendga ko'rsatiladi — raw exception oshkor qilinmasligi kerak."""
+
+    def test_strips_sql_and_params(self):
+        """SQLAlchemy xatosidagi SQL va parametrlar DB'ga yozilmasin."""
+        raw = (
+            '(sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) '
+            '<class \'asyncpg.exceptions.DatatypeMismatchError\'>: column "x" is of type '
+            'integer[] but expression is of type json '
+            '[SQL: INSERT INTO risk_score VALUES ($1, $2)] '
+            "[parameters: ('vid_x', 0.2)] (Background on this error at: https://sqlalche.me/e/20/f405)"
+        )
+        msg = _sanitize_job_error(ValueError(raw))
+        assert "INSERT INTO" not in msg
+        assert "$1" not in msg
+        assert "vid_x" not in msg
+        assert "sqlalche.me" not in msg
+
+    def test_capped_length(self):
+        msg = _sanitize_job_error(ValueError("x" * 5000))
+        assert len(msg) <= 320  # 300 + prefix
+
+    def test_flattens_newlines(self):
+        msg = _sanitize_job_error(ValueError("line1\nline2\t\tline3"))
+        assert "\n" not in msg and "\t" not in msg
+
+    def test_includes_exception_type(self):
+        msg = _sanitize_job_error(RuntimeError("boom"))
+        assert msg.startswith("RuntimeError:")
+        assert "boom" in msg
+
+
 @pytest.fixture
 def sample_events():
     """Sample enriched events for testing."""
     return [
-        [10.0, 15.0, "speeding", 1, 0.9],
-        [20.0, 25.0, "illegal_parking", 2, 0.85],
-        [30.0, 35.0, "speeding", 1, 0.95],
-        [40.0, 45.0, "illegal_uturn", 3, 0.8],
+        [10.0, 15.0, "accident", 1, 0.9],
+        [20.0, 25.0, "stopped_vehicle", 2, 0.85],
+        [30.0, 35.0, "accident", 1, 0.95],
+        [40.0, 45.0, "illegal_u_turn", 3, 0.8],
     ]
 
 
@@ -48,12 +81,12 @@ class TestRiskCalculation:
 
             # Check risk values
             assert added_obj.video_id == "vid_test"
-            assert added_obj.overall_risk == 0.4  # max of speeding (0.4), illegal_parking (0.2), illegal_uturn (0.2)
-            assert added_obj.by_category["speeding"] == 0.4  # 2 events * 0.2 capped at 1.0
-            assert added_obj.by_category["illegal_parking"] == 0.2
-            assert added_obj.by_category["illegal_uturn"] == 0.2
+            assert added_obj.overall_risk == 0.4  # max of accident (0.4), stopped_vehicle (0.2), illegal_u_turn (0.2)
+            assert added_obj.by_category["accident"] == 0.4  # 2 events * 0.2 capped at 1.0
+            assert added_obj.by_category["stopped_vehicle"] == 0.2
+            assert added_obj.by_category["illegal_u_turn"] == 0.2
             assert added_obj.by_category["wrong_way"] == 0.0
-            assert added_obj.by_category["stop_line_crossing"] == 0.0
+            assert added_obj.by_category["stop_line"] == 0.0
 
     @pytest.mark.asyncio
     async def test_calculate_risk_empty_events(self, empty_events):
@@ -72,17 +105,17 @@ class TestRiskCalculation:
     @pytest.mark.asyncio
     async def test_calculate_risk_caps_at_1(self, sample_events):
         """Test risk caps at 1.0 per category."""
-        # Create many speeding events
-        many_speeding = [[10.0 + i, 12.0 + i, "speeding", 1, 0.9] for i in range(10)]
+        # Create many accident events
+        many_accident = [[10.0 + i, 12.0 + i, "accident", 1, 0.9] for i in range(10)]
 
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
             mock_session_maker.return_value.__aenter__.return_value = mock_session
 
-            await calculate_and_save_risk("vid_test", many_speeding)
+            await calculate_and_save_risk("vid_test", many_accident)
 
             added_obj = mock_session.add.call_args[0][0]
-            assert added_obj.by_category["speeding"] == 1.0  # Capped at 1.0
+            assert added_obj.by_category["accident"] == 1.0  # Capped at 1.0
             assert added_obj.overall_risk == 1.0
 
     @pytest.mark.asyncio
@@ -103,7 +136,7 @@ class TestRiskCalculation:
     async def test_high_risk_tracks_limited_to_5(self):
         """Test high_risk_tracks limited to 5 tracks."""
         # Create events with 7 different track IDs
-        many_tracks = [[10.0 + i, 12.0 + i, "speeding", i + 1, 0.9] for i in range(7)]
+        many_tracks = [[10.0 + i, 12.0 + i, "accident", i + 1, 0.9] for i in range(7)]
 
         with patch("app.services.inference.async_session_maker") as mock_session_maker:
             mock_session = AsyncMock()
@@ -115,13 +148,11 @@ class TestRiskCalculation:
             assert len(added_obj.high_risk_tracks) == 5
 
     def test_valid_labels_constant(self):
-        """Test VALID_LABELS matches expected."""
+        """Test VALID_LABELS matches engine CLASSES (14 official WIUT spec classes)."""
         expected = [
-            "speeding",
-            "illegal_parking",
-            "illegal_uturn",
-            "wrong_way",
-            "stop_line_crossing",
+            "accident", "near_miss", "red_light", "wrong_way", "illegal_u_turn",
+            "stopped_vehicle", "jaywalking", "failure_to_yield", "illegal_turn",
+            "solid_line_crossing", "stop_line", "congestion", "road_obstacle", "fire_smoke",
         ]
         assert expected == VALID_LABELS
 
@@ -148,7 +179,7 @@ class TestSaveEvents:
             assert first_event.job_id == "job_test"
             assert first_event.start_sec == 10.0
             assert first_event.end_sec == 15.0
-            assert first_event.label == "speeding"
+            assert first_event.label == "accident"
             assert first_event.track_id == 1
             assert first_event.confidence == 0.9
 
@@ -156,7 +187,7 @@ class TestSaveEvents:
     async def test_save_events_default_track_id_confidence(self):
         """Test default track_id and confidence when not provided."""
         events_minimal = [
-            [10.0, 15.0, "speeding"],  # Only 3 elements
+            [10.0, 15.0, "accident"],  # Only 3 elements
         ]
 
         with patch("app.services.inference.async_session_maker") as mock_session_maker:

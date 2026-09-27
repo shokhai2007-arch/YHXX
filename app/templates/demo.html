@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% block title %}Demo — CyberLeek{% endblock %}
+{% block main %}
+<div class="w-full max-w-4xl mx-auto py-12 px-4 space-y-8">
+  <!-- 1. Page Header -->
+  <header class="space-y-2">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-secondary font-label-sm text-label-sm">
+      <span class="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse"></span>
+      Edge Analytics Pipeline v2.4
+    </div>
+    <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Demo Tahlil Markazi</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+      Videoni yuklang yoki oldindan hisoblangan tayyor sample lardan birini tanlab tahlilni ko'ring.
+    </p>
+  </header>
+
+  <!-- 2. VideoUploader Component -->
+  <section class="bg-surface-container rounded-xl p-6 shadow-md">
+    <form id="upload-form" enctype="multipart/form-data">
+      <div class="relative group cursor-pointer rounded-xl bg-surface-container-low p-10 flex flex-col items-center justify-center text-center transition-all duration-300 hover:bg-surface-container-high" id="drop-zone">
+        <input accept="video/mp4" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" id="video-file-input" name="file" type="file" />
+        <div class="w-16 h-16 rounded-full bg-primary-container/20 flex items-center justify-center text-primary mb-4 group-hover:scale-110 group-hover:bg-primary-container/30 transition-transform">
+          <span class="material-symbols-outlined text-[32px]">cloud_upload</span>
+        </div>
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Videoni bu yerga tashlang yoki faylni tanlang</h3>
+        <p class="font-body-md text-body-md text-on-surface-variant mb-6">MP4 · ≤100MB · ≤2min qo'llab-quvvatlanadi</p>
+        <button class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:bg-secondary-container transition-colors shadow-sm pointer-events-none" type="button">
+          <span class="material-symbols-outlined text-[18px]">folder_open</span>
+          Faylni tanlash
+        </button>
+      </div>
+      <div class="hidden mt-4 items-center justify-between px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md" id="file-info-badge">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">movie</span>
+          <span class="font-medium" id="selected-file-name">traffic_capture.mp4</span>
+          <span class="text-on-surface-variant text-label-sm font-label-sm" id="selected-file-size">(0 MB)</span>
+        </div>
+        <button class="text-on-surface-variant hover:text-error transition-colors" id="remove-file-btn" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+      <p class="hidden mt-3 text-label-sm text-error font-label-sm" id="upload-error"></p>
+      <div class="flex justify-end mt-4">
+        <button class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:bg-secondary-container transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none" id="upload-btn" type="submit">
+          <span class="material-symbols-outlined text-[18px]">play_circle</span>
+          Yuklash va tahlil qilish
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- 3. Sample Videos Section -->
+  <section class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Yoki tayyor namuna videolarni tanlang:</h2>
+      <span class="font-label-sm text-label-sm text-on-surface-variant">3 ta pre-analiz qilingan oqim</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {% for s in samples %}
+      <article class="sample-card group cursor-pointer bg-surface-container rounded-xl overflow-hidden shadow-sm hover:scale-[1.02] hover:bg-surface-container-high transition-all duration-200" data-sample="{{ s.id }}">
+        <div class="relative aspect-video w-full overflow-hidden bg-surface-container-lowest">
+          <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-surface-container-lowest/90 via-surface-container-lowest/30 to-transparent">
+            <div class="w-12 h-12 rounded-full bg-surface/80 backdrop-blur text-on-surface flex items-center justify-center opacity-80 group-hover:opacity-100 group-hover:scale-110 group-hover:bg-primary-container group-hover:text-on-primary-container transition-all shadow-md">
+              <span class="material-symbols-outlined text-[24px]">play_arrow</span>
+            </div>
+          </div>
+          <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-surface/80 backdrop-blur font-label-sm text-label-sm text-on-surface">{{ s.duration_label }}</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-label-md text-label-md font-semibold text-on-surface">{{ s.id }}.mp4</span>
+            <span class="font-label-sm text-label-sm text-tertiary">{{ s.event_count }} qoidabuzarlik</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            {% for lbl in s.badge_labels %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-event-{{ lbl.slug }}/20 text-event-{{ lbl.slug }} font-label-sm text-label-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-event-{{ lbl.slug }}"></span>
+              {{ lbl.title }}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 4. ProcessingProgress Component -->
+  <section class="bg-surface-container rounded-xl p-6 shadow-md space-y-6" id="progress-section">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/20 text-primary font-label-sm text-label-sm">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+          </span>
+          <span id="progress-status-label">TAYYOR · 0%</span>
+        </div>
+        <span class="font-label-sm text-label-sm text-on-surface-variant hidden sm:inline" id="progress-source-label">Engine: Mock Pipeline</span>
+      </div>
+      <div class="font-label-sm text-label-sm text-on-surface-variant">
+        Taxminiy qolgan vaqt: <span class="text-on-surface font-semibold" id="progress-eta">—</span>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="space-y-2">
+      <div class="h-2 w-full bg-surface-container-low rounded-full overflow-hidden">
+        <div class="h-full w-[0%] bg-gradient-to-r from-primary-container via-secondary-container to-primary rounded-full transition-all duration-500" id="progress-bar-fill"></div>
+      </div>
+      <div class="flex justify-between items-center text-label-sm font-label-sm text-on-surface-variant">
+        <span id="progress-status-text">Yuklashni boshlang yoki sample tanlang...</span>
+        <span class="text-secondary font-semibold" id="progress-fps"></span>
+      </div>
+    </div>
+    <!-- 5 Horizontal Steps -->
+    <div class="grid grid-cols-5 gap-2 pt-2" id="pipeline-steps">
+      {% for step in steps %}
+      <div class="flex flex-col items-center text-center space-y-2 step-item" data-step="{{ loop.index }}">
+        <div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center step-icon">
+          <span class="material-symbols-outlined text-[18px]">{{ step.icon }}</span>
+        </div>
+        <div class="space-y-0.5">
+          <span class="block font-label-sm text-label-sm font-semibold text-on-surface-variant step-title">{{ step.title }}</span>
+          <span class="block text-[10px] text-on-surface-variant uppercase step-state">Kutilmoqda</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <!-- Action Buttons -->
+    <div class="flex items-center justify-end gap-3 pt-2">
+      <button class="px-4 py-2 rounded-lg bg-surface-container-high text-on-surface-variant font-label-md text-label-md hover:text-on-surface hover:bg-surface-container-highest transition-colors" id="btn-cancel" type="button">Cancel</button>
+      <button class="hidden inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-error-container text-on-error-container font-label-md text-label-md hover:brightness-110 transition-colors shadow-sm" id="btn-retry" type="button">
+        <span class="material-symbols-outlined text-[18px]">refresh</span>
+        <span>Qayta urinish</span>
+      </button>
+      <a class="hidden inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:bg-secondary-container transition-colors shadow-sm" id="btn-goto-results" href="#">
+        <span>Natijaga o'tish</span>
+        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+      </a>
+    </div>
+    <!-- Error banner (FAILED holati uchun) -->
+    <div class="hidden mt-4 rounded-lg bg-error-container/40 border border-error/40 p-4 items-start gap-3" id="error-banner">
+      <div class="p-1 rounded-md bg-error/20 text-error shrink-0 mt-0.5">
+        <span class="material-symbols-outlined text-[20px]">error</span>
+      </div>
+      <div class="space-y-0.5">
+        <h4 class="font-label-md text-label-md font-semibold text-on-surface">Tahlil bajarilmadi</h4>
+        <p class="font-body-md text-body-md text-on-surface-variant" id="error-banner-text">—</p>
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Agar xato takrorlansa, boshqa video fayl bilan urinib ko'ring.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Notification Box -->
+  <aside class="rounded-xl bg-surface-container-low p-4 flex items-start gap-3 shadow-sm">
+    <div class="p-1 rounded-md bg-secondary-container/20 text-secondary shrink-0 mt-0.5">
+      <span class="material-symbols-outlined text-[20px]">info</span>
+    </div>
+    <div class="space-y-1">
+      <h4 class="font-label-md text-label-md font-semibold text-on-surface">Demo Rejimi (Sample Demo Mode)</h4>
+      <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+        Sample kartalar tahlili <code class="px-1.5 py-0.5 rounded bg-surface-container font-mono text-[12px] text-secondary">/static/samples/predictions_samples.json</code> orqali brauzerda ko'rsatiladi (API chaqiruvisiz). Haqiqiy video yuklanganda to'liq <code class="px-1.5 py-0.5 rounded bg-surface-container font-mono text-[12px] text-secondary">upload → process → poll</code> oqimi ishlaydi.
+      </p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // ====== Demo sahifa mantiq / Demo page logic ======
+  (function () {
+    var API = "/api/v1";
+    var fileInput = document.getElementById("video-file-input");
+    var badge = document.getElementById("file-info-badge");
+    var nameEl = document.getElementById("selected-file-name");
+    var sizeEl = document.getElementById("selected-file-size");
+    var removeBtn = document.getElementById("remove-file-btn");
+    var uploadForm = document.getElementById("upload-form");
+    var uploadBtn = document.getElementById("upload-btn");
+    var uploadError = document.getElementById("upload-error");
+    var statusLabel = document.getElementById("progress-status-label");
+    var statusText = document.getElementById("progress-status-text");
+    var sourceLabel = document.getElementById("progress-source-label");
+    var etaEl = document.getElementById("progress-eta");
+    var fpsEl = document.getElementById("progress-fps");
+    var barFill = document.getElementById("progress-bar-fill");
+    var btnGoto = document.getElementById("btn-goto-results");
+    var btnCancel = document.getElementById("btn-cancel");
+    var cards = document.querySelectorAll(".sample-card");
+    var stepItems = document.querySelectorAll(".step-item");
+
+    var pollTimer = null;
+    var mockTimer = null;
+    var activeVideoId = null;
+    var lastFailedJobId = null;
+
+    function fmtSize(bytes) {
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function setError(msg) {
+      uploadError.textContent = msg || "";
+      uploadError.classList.toggle("hidden", !msg);
+    }
+
+    // Server xabollarini odamga tushunarli o'zbekcha matnga map qilish.
+    // job.error texnik xato (max 300 belgi) — foydalanuvchiga raw ko'rsatilmaydi.
+    var ERROR_HINTS = [
+      [/datatype|column .* is of type|expression is of type/i,
+        "Serverda ma'lumotlar bazasi sxemasi mos kelmadi. Iltimos, keyinroq qayta urinib ko'ring."],
+      [/filenotfound|video file not found|no such file/i,
+        "Video fayl serverda topilmadi. Faylni qayta yuklab ko'ring."],
+      [/timeout|timed out/i,
+        "Tahlil vaqt chegarasidan oshdi. Qisqaroq video bilan urinib ko'ring."],
+      [/ffmpeg|ffprobe|cv2|opencv/i,
+        "Video faylni qayta ishlashda muammo bo'ldi. Fayl buzilgan bo'lishi mumkin."],
+      [/connection|database|postgres|redis/i,
+        "Server xizmati bilan aloqa uzildi. Birozdan so'ng qayta urinib ko'ring."],
+      [/memory|killed/i,
+        "Video hajmi tizim imkoniyatlaridan katta. Kichikroq fayl yuklang."],
+    ];
+
+    function friendlyJobError(rawError) {
+      if (!rawError) return "Noma'lum xato yuz berdi. Qayta urinib ko'ring.";
+      for (var i = 0; i < ERROR_HINTS.length; i++) {
+        if (ERROR_HINTS[i][0].test(rawError)) return ERROR_HINTS[i][1];
+      }
+      // Fallback: oqilona qisqa bo'lsa ko'rsatamiz, aks holda umumiy matn
+      return rawError.length <= 120
+        ? rawError.charAt(0).toUpperCase() + rawError.slice(1)
+        : "Tahlil davomida kutilmagan xato yuz berdi. Qayta urinib ko'ring.";
+    }
+
+    function showErrorBanner(msg) {
+      document.getElementById("error-banner-text").textContent = msg;
+      var banner = document.getElementById("error-banner");
+      banner.classList.remove("hidden");
+      banner.classList.add("flex");
+    }
+
+    function hideErrorBanner() {
+      var banner = document.getElementById("error-banner");
+      banner.classList.add("hidden");
+      banner.classList.remove("flex");
+    }
+
+    function setRetryVisible(visible) {
+      var btn = document.getElementById("btn-retry");
+      btn.classList.toggle("hidden", !visible);
+    }
+
+    // Retry: shu videoni qayta process qilish (yangi job)
+    document.getElementById("btn-retry").addEventListener("click", function () {
+      if (!activeVideoId) return;
+      hideErrorBanner();
+      setRetryVisible(false);
+      setError("");
+      uploadBtn.disabled = true;
+      resetProgress();
+      setProgress(0, "PROCESSING");
+      statusText.textContent = "Qayta urinilmoqda...";
+      fetch(API + "/videos/" + activeVideoId + "/process", { method: "POST" })
+        .then(function (res) {
+          if (!res.ok) return res.json().then(function (d) { throw new Error(d.detail || "Process xato"); });
+          return res.json();
+        })
+        .then(function (job) { startPolling(job.job_id || job.id); })
+        .catch(function (err) {
+          setError(err.message || "Qayta ishga tushirishda xato");
+          resetProgress();
+          setRetryVisible(true);
+          uploadBtn.disabled = false;
+        });
+    });
+
+    function setProgress(pct, stateText) {
+      barFill.style.width = pct + "%";
+      statusLabel.textContent = stateText + " · " + pct + "%";
+    }
+
+    // 5 bosqichli vizual holatni yangilash / Update 5-step visual state
+    function setStepProgress(pct) {
+      var stepIndex = pct <= 0 ? 0 : pct < 30 ? 1 : pct < 50 ? 2 : pct < 80 ? 3 : pct < 100 ? 4 : 5;
+      stepItems.forEach(function (item, i) {
+        var icon = item.querySelector(".step-icon");
+        var title = item.querySelector(".step-title");
+        var state = item.querySelector(".step-state");
+        icon.className = "w-8 h-8 rounded-full flex items-center justify-center step-icon " + (i < stepIndex ? "bg-status-success/20 text-status-success" : i === stepIndex ? "bg-primary-container text-on-primary-container shadow-lg shadow-primary-container/40 animate-pulse" : "bg-surface-container-high text-on-surface-variant");
+        title.className = "block font-label-sm text-label-sm font-semibold step-title " + (i <= stepIndex ? "text-on-surface" : "text-on-surface-variant");
+        state.textContent = i < stepIndex ? "Tugadi" : i === stepIndex ? "Jarayonda" : "Kutilmoqda";
+        state.className = "block text-[10px] uppercase step-state " + (i < stepIndex ? "text-status-success font-semibold" : i === stepIndex ? "text-primary font-semibold" : "text-on-surface-variant");
+      });
+    }
+
+    function resetProgress() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      if (mockTimer) { clearInterval(mockTimer); mockTimer = null; }
+      setProgress(0, "TAYYOR");
+      setStepProgress(0);
+      statusText.textContent = "Yuklashni boshlang yoki sample tanlang...";
+      fpsEl.textContent = "";
+      etaEl.textContent = "—";
+      sourceLabel.textContent = "Engine: Mock Pipeline";
+      btnGoto.classList.add("hidden");
+      hideErrorBanner();
+      setRetryVisible(false);
+    }
+
+    // ====== Real upload oqimi / Real upload flow ======
+    uploadForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      setError("");
+      if (!fileInput.files || !fileInput.files.length) {
+        setError("Avval video faylni tanlang.");
+        return;
+      }
+      var fd = new FormData();
+      fd.append("file", fileInput.files[0]);
+      uploadBtn.disabled = true;
+      resetProgress();
+      setProgress(0, "YUKLANMOQDA");
+      statusText.textContent = "Video serverga yuklanmoqda (POST /api/v1/videos)...";
+      lastFailedJobId = null;
+
+      fetch(API + "/videos", { method: "POST", body: fd })
+        .then(function (res) {
+          if (!res.ok) return res.json().then(function (d) { throw new Error(d.detail || "Yuklashda xato"); });
+          return res.json();
+        })
+        .then(function (video) {
+          activeVideoId = video.id;
+          statusText.textContent = "Yuklandi: " + video.id + ". Processing boshlanmoqda...";
+          return fetch(API + "/videos/" + video.id + "/process", { method: "POST" })
+            .then(function (res2) {
+              if (!res2.ok) return res2.json().then(function (d) { throw new Error(d.detail || "Process xato"); });
+              return res2.json();
+            })
+            .then(function (job) { startPolling(job.job_id || job.id); });
+        })
+        .catch(function (err) {
+          setError(err.message || "Xatolik yuz berdi");
+          resetProgress();
+          uploadBtn.disabled = false;
+        });
+    });
+
+    function startPolling(jobId) {
+      sourceLabel.textContent = "Engine: TrafficPipeline (mock)";
+      pollTimer = setInterval(function () {
+        fetch(API + "/jobs/" + jobId)
+          .then(function (r) { return r.json(); })
+          .then(function (job) {
+            var pct = job.progress || 0;
+            setProgress(pct, job.status || "PROCESSING");
+            setStepProgress(pct);
+            etaEl.textContent = pct > 0 && pct < 100 ? "00:0" + Math.max(1, Math.round((100 - pct) / 10)) : "00:00";
+            fpsEl.textContent = pct > 0 && pct < 100 ? "28.4 FPS" : "";
+            statusText.textContent = job.status === "COMPLETED"
+              ? "Tahlil yakunlandi. Natijalarni ko'rish mumkin."
+              : job.status === "FAILED"
+                ? "Tahlil bajarilmadi — quyida batafsil ma'lumot."
+                : "Kadrlar tahlil qilinmoqda (" + pct + "%)...";
+            if (job.status === "COMPLETED") {
+              clearInterval(pollTimer); pollTimer = null;
+              uploadBtn.disabled = false;
+              btnGoto.href = "/results/" + activeVideoId;
+              btnGoto.classList.remove("hidden");
+            } else if (job.status === "FAILED") {
+              clearInterval(pollTimer); pollTimer = null;
+              uploadBtn.disabled = false;
+              lastFailedJobId = jobId;
+              setProgress(0, "FAILED");
+              setStepProgress(0);
+              showErrorBanner(friendlyJobError(job.error));
+              setRetryVisible(true);
+            }
+          })
+          .catch(function () {});
+      }, 1000);
+    }
+
+    // ====== Sample (mock) oqim / Sample mock flow ======
+    cards.forEach(function (card) {
+      card.addEventListener("click", function () {
+        cards.forEach(function (c) { c.classList.remove("ring-2", "ring-primary"); });
+        this.classList.add("ring-2", "ring-primary");
+        var sampleId = this.getAttribute("data-sample");
+        resetProgress();
+        sourceLabel.textContent = "Sample Demo Mode — API chaqiruvisiz";
+        var pct = 0;
+        mockTimer = setInterval(function () {
+          pct += Math.floor(6 + Math.random() * 10);
+          if (pct >= 100) {
+            pct = 100;
+            clearInterval(mockTimer); mockTimer = null;
+            statusText.textContent = sampleId + ".mp4 tahlili yakunlandi (sample ma'lumotlari).";
+            btnGoto.href = "/results/sample/" + sampleId;
+            btnGoto.classList.remove("hidden");
+          } else {
+            statusText.textContent = sampleId + ".mp4: kadrlar tahlil qilinmoqda (" + pct + "%)...";
+          }
+          setProgress(pct, "PROCESSING");
+          setStepProgress(pct);
+          etaEl.textContent = "00:0" + Math.max(1, Math.round((100 - pct) / 12));
+          fpsEl.textContent = "30.0 FPS";
+        }, 400);
+      });
+    });
+
+    btnCancel.addEventListener("click", resetProgress);
+    if (removeBtn) {
+      removeBtn.addEventListener("click", function () {
+        fileInput.value = "";
+        badge.classList.add("hidden");
+        badge.classList.remove("flex");
+      });
+    }
+    if (fileInput) {
+      fileInput.addEventListener("change", function (e) {
+        if (e.target.files && e.target.files.length > 0) {
+          var f = e.target.files[0];
+          nameEl.textContent = f.name;
+          sizeEl.textContent = "(" + fmtSize(f.size) + ")";
+          badge.classList.remove("hidden");
+          badge.classList.add("flex");
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

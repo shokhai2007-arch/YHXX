@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import JSON, REAL, TIMESTAMP, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -16,7 +15,8 @@ class RiskScore(Base):
     video_id: Mapped[str] = mapped_column(String(32), ForeignKey("video.id"), unique=True, nullable=False)
     overall_risk: Mapped[float] = mapped_column(REAL, nullable=False)
     by_category: Mapped[dict] = mapped_column(JSON, nullable=False)
-    high_risk_tracks: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=[])
+    # JSON — portabl (SQLite ham, Postgres ham) / Portable across SQLite and Postgres
+    high_risk_tracks: Mapped[list[int]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
 
     video: Mapped["Video"] = relationship(back_populates="risk_score")

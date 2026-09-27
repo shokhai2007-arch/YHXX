@@ -20,5 +20,9 @@ class Job(Base):
     completed_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=datetime.utcnow)
 
+    # "job_id" — API/docs/frontend ishlatadigan nom; DB/servislarda esa `id`.
+    # Validator ikkala nomni qabul qiladi, serijalizatsiyada har doim `job_id` beradi.
+    job_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
     video: Mapped["Video"] = relationship(back_populates="jobs")
     events: Mapped[list["Event"]] = relationship(back_populates="job", cascade="all, delete-orphan")

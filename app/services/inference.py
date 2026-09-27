@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -8,15 +9,33 @@ from app.config import settings
 from app.database import async_session_maker
 from app.models import Event, Job, RiskScore, Video
 from app.utils.video_utils import create_annotated_video, create_thumbnail
+from engine.pipeline import CLASSES as VALID_LABELS  # 14 official WIUT spec labels
 from engine.pipeline import TrafficPipeline
 
-VALID_LABELS = [
-    "speeding",
-    "illegal_parking",
-    "illegal_uturn",
-    "wrong_way",
-    "stop_line_crossing",
-]
+logger = logging.getLogger(__name__)
+
+# Job.error field'ga yoziladigan xato matni frontendga ko'rsatiladi (demo.html:
+# "Xato: " + job.error), shuning uchun raw exception'ni (SQL, parametrlar, stack)
+# oshkor qilmasdan qisqa xabar saqlaymiz.
+_MAX_JOB_ERROR_LEN = 300
+
+
+def _sanitize_job_error(exc: BaseException) -> str:
+    """Raw exception matnini frontend-safe qisqa xabarga aylantirish.
+
+    SQL xatolari (SQL, parametrlar, stack trace) xodim xatosi sifatida logga
+    yoziladi, DB'ga esa faqat exception turining oxirgi qismi + qisqa sabab tushadi.
+    """
+    reason = str(exc).strip() or exc.__class__.__name__
+    reason = " ".join(reason.split())  # newlines/tab'lar bitta probelga
+    # SQLAlchemy xatolarida SQL va qiymatlar oxirida `[SQL: ...] [parameters: ...]`
+    # blokida keladi — shu markergacha kesamiz (SQL, parametrlar oshkor bo'lmasin).
+    for marker in ("[SQL:", "[parameters:"):
+        idx = reason.find(marker)
+        if idx != -1:
+            reason = reason[:idx].rstrip()
+    reason = reason[:_MAX_JOB_ERROR_LEN]
+    return f"{type(exc).__name__}: {reason}"
 
 
 async def update_job_progress(job_id: str, progress: int, status: str = None, error: str = None):
@@ -167,15 +186,15 @@ async def run_inference(job_id: str, video_id: str, video_path: str):
         # Progress: 95% - Writing result.json
         await update_job_progress(job_id, 95)
 
+        # Label-generic risk data (barcha 14 klass uchun) / Label-generic risk data
+        by_category = dict.fromkeys(VALID_LABELS, 0.0)
+        for e in enriched_events:
+            label = e[2]
+            if label in by_category:
+                by_category[label] = min(by_category[label] + 0.2, 1.0)
         risk_data = {
-            "overall_risk": max([0.8 if e[2] == "speeding" else 0.5 for e in enriched_events], default=0.0),
-            "by_category": {
-                "speeding": 0.8,
-                "illegal_parking": 0.5,
-                "illegal_uturn": 0.0,
-                "wrong_way": 0.0,
-                "stop_line_crossing": 0.3
-            },
+            "overall_risk": max(by_category.values(), default=0.0),
+            "by_category": by_category,
             "high_risk_tracks": list(set(e[3] for e in enriched_events))
         }
 
@@ -195,7 +214,9 @@ async def run_inference(job_id: str, video_id: str, video_path: str):
         await update_job_progress(job_id, 100, "COMPLETED")
 
     except Exception as e:
-        await update_job_progress(job_id, 0, "FAILED", str(e))
+        # To'liq traceback (SQL, parametrlar bilan) — logga; frontendga — qisqa xabar.
+        logger.exception("Inference failed for video %s (job %s)", video_id, job_id)
+        await update_job_progress(job_id, 0, "FAILED", _sanitize_job_error(e))
         async with async_session_maker() as db:
             await db.execute(
                 update(Video)
@@ -203,4 +224,3 @@ async def run_inference(job_id: str, video_id: str, video_path: str):
                 .values(status="FAILED")
             )
             await db.commit()
-        raise

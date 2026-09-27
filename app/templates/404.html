@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Topilmadi — CyberLeek{% endblock %}
+{% block main %}
+<div class="w-full max-w-2xl mx-auto py-24 px-4 text-center space-y-6">
+  <span class="material-symbols-outlined text-[64px] text-outline">wrong_location</span>
+  <h1 class="font-display-hero-mobile text-on-surface tracking-tight">404</h1>
+  <p class="font-body-lg text-body-lg text-on-surface-variant">
+    Siz qidirgan sahifa yoki video topilmadi. Manzil noto'g'ri bo'lishi yoki tahlil o'chirilgan bo'lishi mumkin.
+  </p>
+  <div class="flex items-center justify-center gap-3 pt-2">
+    <a class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:bg-secondary-container transition-colors shadow-md" href="/">
+      <span class="material-symbols-outlined text-[18px]">home</span> Bosh sahifa
+    </a>
+    <a class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-colors" href="/demo">
+      <span class="material-symbols-outlined text-[18px]">play_circle</span> Demo sinash
+    </a>
+  </div>
+</div>
+{% endblock %}

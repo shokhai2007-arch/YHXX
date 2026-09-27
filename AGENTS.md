@@ -39,6 +39,7 @@
 | `docs/architecture.md` | Tizim arxitekturasi, dual-system, mock AI, roadmap |
 | `docs/backend-api.md` | API contract, DB schema, background jobs, validation |
 | `docs/frontend.md` | Sahifalar, komponentlar, video seek, sample demo mode |
+| `docs/integration.md` | Frontend↔Backend integratsiya rejasi, qarorlar, aniqlangan nomuvofiqliklar |
 
 ---
 

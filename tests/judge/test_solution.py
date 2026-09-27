@@ -1,14 +1,34 @@
 """Judge environment tests: solution.py + run_submission.py CLI contract."""
 
 import json
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 # Repo ildizi (hardcoded absolute path emas — CI/local ikkalasida ham ishlaydi)
 REPO_ROOT = str(Path(__file__).resolve().parents[2])
+
+
+def _run_cli(args: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """Run a repo CLI script with repo root on PYTHONPATH (host va konteynerda ham ishlaydi).
+
+    Izoh: import qismi `engine.pipeline` sifatida yozilgan, shuning uchun repo ildizi
+    PYTHONPATHda turishi kerak (cwd yetarli emas, chunki subprocess izolyatsiyasi).
+    """
+    env = os.environ.copy()
+    env["PYTHONPATH"] = REPO_ROOT + os.pathsep + env.get("PYTHONPATH", "")
+    return subprocess.run(
+        [sys.executable, *args],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        env=env,
+        **kwargs,
+    )
 
 
 class TestSolutionDetectEvents:
@@ -59,7 +79,7 @@ class TestSolutionDetectEvents:
         """Test behavior with non-existent file."""
         from solution import detect_events
 
-        with pytest.raises(Exception):
+        with pytest.raises(FileNotFoundError):
             detect_events("/nonexistent/video.mp4")
 
 
@@ -68,12 +88,7 @@ class TestRunSubmission:
 
     def test_run_submission_help(self):
         """Test --help shows usage."""
-        result = subprocess.run(
-            ["python", "run_submission.py", "--help"],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["run_submission.py", "--help"])
         assert result.returncode == 0
         assert "usage" in result.stdout.lower()
 
@@ -84,11 +99,8 @@ class TestRunSubmission:
         shutil.copy(sample_video_path, videos_dir / "test_video.mp4")
         output_file = tmp_path / "custom_predictions.json"
 
-        result = subprocess.run(
-            ["python", "run_submission.py", "--videos", str(videos_dir), "-o", str(output_file)],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
+        result = _run_cli(
+            ["run_submission.py", "--videos", str(videos_dir), "-o", str(output_file)]
         )
 
         assert result.returncode == 0, result.stderr
@@ -102,24 +114,14 @@ class TestRunSubmission:
 
     def test_run_submission_no_args_exits(self):
         """Test exit with error when no args and no stdin."""
-        result = subprocess.run(
-            ["python", "run_submission.py"],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["run_submission.py"])
 
         assert result.returncode != 0
         assert "required" in result.stderr.lower()
 
     def test_run_submission_invalid_folder(self):
         """Test with non-existent videos folder."""
-        result = subprocess.run(
-            ["python", "run_submission.py", "--videos", "/nonexistent/folder"],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["run_submission.py", "--videos", "/nonexistent/folder"])
 
         assert result.returncode != 0
         assert "not found" in result.stderr.lower()
@@ -129,12 +131,7 @@ class TestRunSubmission:
         videos_dir = tmp_path / "empty"
         videos_dir.mkdir()
 
-        result = subprocess.run(
-            ["python", "run_submission.py", "--videos", str(videos_dir)],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["run_submission.py", "--videos", str(videos_dir)])
 
         assert result.returncode != 0
         assert "no video files" in result.stderr.lower()
@@ -146,11 +143,8 @@ class TestRunSubmission:
         shutil.copy(sample_video_path, videos_dir / "test_video.mp4")
         output_file = tmp_path / "predictions.json"
 
-        result = subprocess.run(
-            ["python", "run_submission.py", "--videos", str(videos_dir), "-o", str(output_file)],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
+        result = _run_cli(
+            ["run_submission.py", "--videos", str(videos_dir), "-o", str(output_file)]
         )
 
         assert result.returncode == 0, result.stderr
@@ -177,35 +171,20 @@ class TestSolutionMain:
 
     def test_solution_main_help(self):
         """Test solution.py --help exits 0 with usage."""
-        result = subprocess.run(
-            ["python", "solution.py", "--help"],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["solution.py", "--help"])
         assert result.returncode == 0
         assert "usage" in (result.stdout + result.stderr).lower()
 
     def test_solution_main_with_video(self, sample_video_path):
         """Test solution.py with video argument prints JSON."""
-        result = subprocess.run(
-            ["python", "solution.py", sample_video_path],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["solution.py", sample_video_path])
         assert result.returncode == 0, result.stderr
         predictions = json.loads(result.stdout.strip())
         assert isinstance(predictions, list)
 
     def test_solution_main_no_args(self):
         """Test solution.py without args shows usage and exits non-zero."""
-        result = subprocess.run(
-            ["python", "solution.py"],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
+        result = _run_cli(["solution.py"])
         assert result.returncode != 0
         assert "usage" in (result.stdout + result.stderr).lower()
 

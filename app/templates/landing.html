@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}CyberLeek — AI Traffic Ops{% endblock %}
+{% block main %}
+<div class="w-full max-w-5xl mx-auto py-16 px-4 space-y-12">
+  <!-- Hero -->
+  <section class="space-y-6 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-secondary font-label-sm text-label-sm">
+      <span class="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse"></span>
+      WUIT Hackathon 2026 · CV Track · Edge Analytics v2.4
+    </div>
+    <h1 class="font-display-hero-mobile md:font-display-hero-tablet text-on-surface tracking-tight">
+      Yo'l harakati tahlili<br />
+      <span class="text-primary">AI kuchi bilan</span>
+    </h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+      Videodan tezlikdan ortiq harakat, noqonuniy to'xtash, noto'g'ri burilish va to'xtash chizig'ini kesib o'tish holatlarini aniqlang. Xavf darajasi avtomatik baholanadi.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <a class="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:bg-secondary-container transition-colors shadow-md" href="/demo">
+        <span class="material-symbols-outlined text-[20px]">play_circle</span> Demo sinash
+      </a>
+      <a class="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-colors shadow-sm" href="/about">
+        <span class="material-symbols-outlined text-[20px]">info</span> Loyiha haqida
+      </a>
+    </div>
+  </section>
+
+  <!-- Imkoniyatlar / Features -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for f in features %}
+    <article class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-2">
+      <div class="w-11 h-11 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-[24px]">{{ f.icon }}</span>
+      </div>
+      <h3 class="font-headline-sm text-headline-sm text-on-surface">{{ f.title }}</h3>
+      <p class="font-body-md text-body-md text-on-surface-variant">{{ f.desc }}</p>
+    </article>
+    {% endfor %}
+  </section>
+
+  <!-- Qoidabuzarlik turlari / Violation types -->
+  <section class="space-y-4">
+    <h2 class="font-headline-md text-headline-md text-on-surface text-center">Aniqlanadigan qoidabuzarliklar</h2>
+    <div class="flex flex-wrap justify-center gap-2">
+      {% for lbl in labels %}
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-event-{{ lbl.slug }}/20 text-event-{{ lbl.slug }} font-label-md text-label-md font-semibold">
+        <span class="w-2 h-2 rounded-full bg-event-{{ lbl.slug }}"></span> {{ lbl.title }}
+      </span>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Meta -->
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+    <div class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/30">
+      <p class="font-metric-lg text-metric-lg text-on-surface">5</p>
+      <p class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Violation classes</p>
+    </div>
+    <div class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/30">
+      <p class="font-metric-lg text-metric-lg text-on-surface">&lt;10s</p>
+      <p class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Processing target</p>
+    </div>
+    <div class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/30">
+      <p class="font-metric-lg text-metric-lg text-on-surface">MP4</p>
+      <p class="font-label-sm text-label-sm text-outline uppercase tracking-wider">≤100MB · ≤2min</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

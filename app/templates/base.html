@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html class="dark" lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>{% block title %}CyberLeek — AI Traffic Ops{% endblock %}</title>
+  {% block head %}
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
+  <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}::-webkit-scrollbar{display:none;}</style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary":"#581e00","primary-fixed-dim":"#b4c5ff","on-error-container":"#ffdad6","surface-container-low":"#161c28","on-primary-container":"#eeefff","surface-dim":"#0e131f","secondary":"#adc6ff","inverse-primary":"#0053db","secondary-container":"#0566d9","on-secondary-fixed":"#001a42","error-container":"#93000a","surface-container-lowest":"#080e1a","on-background":"#dde2f3","on-secondary":"#002e6a","on-primary-fixed":"#00174b","secondary-fixed":"#d8e2ff","surface-bright":"#343946","surface-container-high":"#242a36","surface":"#0e131f","on-secondary-fixed-variant":"#004395","primary":"#b4c5ff","on-tertiary-container":"#ffede6","tertiary":"#ffb596","tertiary-fixed":"#ffdbcd","surface-container-highest":"#2f3542","primary-container":"#2563eb","surface-variant":"#2f3542","background":"#0e131f","on-primary-fixed-variant":"#003ea8","inverse-surface":"#dde2f3","on-surface-variant":"#c3c6d7","on-primary":"#002a78","on-surface":"#dde2f3","error":"#ffb4ab","inverse-on-surface":"#2b303d","on-error":"#690005","tertiary-container":"#bc4800","secondary-fixed-dim":"#adc6ff","on-tertiary-fixed":"#360f00","surface-tint":"#b4c5ff","outline-variant":"#434655","on-secondary-container":"#e6ecff","surface-container":"#1a202c","outline":"#8d90a0","status-success":"#10B981","event-accident":"#EF4444","event-near-miss":"#F43F5E","event-red-light":"#DC2626","event-wrong-way":"#3B82F6","event-illegal-u-turn":"#A855F7","event-stopped-vehicle":"#F59E0B","event-jaywalking":"#EC4899","event-failure-to-yield":"#F97316","event-illegal-turn":"#8B5CF6","event-solid-line-crossing":"#EAB308","event-stop-line":"#CA8A04","event-congestion":"#06B6D4","event-road-obstacle":"#14B8A6","event-fire-smoke":"#FB923C"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xs":"0.25rem",margin:"1.5rem","space-lg":"1.5rem","gutter-lg":"2rem","space-md":"1rem",gutter:"1.5rem","space-xl":"2rem","margin-lg":"2.5rem","margin-sm":"1rem","gutter-sm":"1rem","space-sm":"0.5rem"},fontFamily:{"headline-lg":["Inter"],"body-lg":["Inter"],"display-hero":["Inter"],"body-md":["Inter"],"label-sm":["Inter"],"metric-lg":["Inter"],"headline-sm":["Inter"],"display-hero-mobile":["Inter"],"headline-md":["Inter"],"label-md":["Inter"],"metric-sm":["Inter"],"display-hero-tablet":["Inter"]},fontSize:{"headline-lg":["24px",{lineHeight:"32px",fontWeight:"600"}],"body-lg":["18px",{lineHeight:"28px",fontWeight:"400"}],"display-hero":["72px",{lineHeight:"80px",letterSpacing:"-0.025em",fontWeight:"700"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"400"}],"label-sm":["12px",{lineHeight:"16px",fontWeight:"500"}],"metric-lg":["36px",{lineHeight:"40px",fontWeight:"700"}],"headline-sm":["18px",{lineHeight:"24px",fontWeight:"600"}],"display-hero-mobile":["36px",{lineHeight:"44px",letterSpacing:"-0.02em",fontWeight:"700"}],"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"label-md":["14px",{lineHeight:"20px",fontWeight:"500"}],"metric-sm":["30px",{lineHeight:"36px",fontWeight:"700"}],"display-hero-tablet":["60px",{lineHeight:"68px",letterSpacing:"-0.025em",fontWeight:"700"}]}}}};
+  </script>
+  {% endblock %}
+  {% block page_head %}{% endblock %}
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+  <header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30">
+    <div class="h-16 w-full px-gutter-lg flex items-center justify-between">
+      <div class="flex items-center gap-space-lg">
+        <a class="flex items-center gap-space-sm" href="/">
+          <span class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center">
+            <span class="material-symbols-outlined text-on-primary-container text-[20px]">traffic</span>
+          </span>
+          <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-semibold">CyberLeek</span>
+        </a>
+        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high border border-outline-variant/40 text-secondary font-label-sm text-label-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse"></span>AI Traffic Ops
+        </span>
+      </div>
+      <nav class="hidden lg:flex items-center gap-space-xs" id="main-nav">
+        <a class="px-space-md py-space-sm text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors rounded-lg" data-nav="landing" href="/">Landing</a>
+        <a class="px-space-md py-space-sm text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors rounded-lg" data-nav="demo-upload" href="/demo">Demo</a>
+        <a class="px-space-md py-space-sm text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors rounded-lg" data-nav="sample-results" href="/results">Results</a>
+        <a class="px-space-md py-space-sm text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors rounded-lg" data-nav="about-project" href="/about">About</a>
+        <a class="px-space-md py-space-sm text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors rounded-lg" data-nav="traffic-report" href="/report">Report</a>
+      </nav>
+      <div class="flex items-center gap-space-md">
+        <a class="hidden sm:inline-flex items-center justify-center h-9 px-4 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:bg-secondary-container hover:text-on-secondary-container transition-colors shadow-sm" href="/demo">Start Demo</a>
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+          <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main class="w-full pt-16 bg-surface min-h-[calc(100vh-16rem)]">
+    {% block main %}{% endblock %}
+  </main>
+  <footer class="w-full bg-surface-container-lowest border-t border-outline-variant/30 py-space-xl">
+    <div class="w-full px-gutter-lg">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-gutter-lg pb-space-lg border-b border-outline-variant/20">
+        <div class="space-y-space-sm">
+          <div class="flex items-center gap-space-sm">
+            <span class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center">
+              <span class="material-symbols-outlined text-on-primary-container text-[16px]">traffic</span>
+            </span>
+            <span class="font-headline-sm text-headline-sm text-on-surface font-semibold">CyberLeek</span>
+          </div>
+          <p class="font-body-md text-body-md text-on-surface-variant">Intelligent deep-learning edge platform for real-time vehicular violation triaging, speed calibration, and telemetry forensics.</p>
+        </div>
+        <div>
+          <h4 class="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Platform</h4>
+          <ul class="space-y-space-xs font-body-md text-body-md">
+            <li class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">Multi-Track Detection</li>
+            <li class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">Optical Telemetry</li>
+            <li class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">Violation Classification</li>
+            <li class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">Edge Inference</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Documentation</h4>
+          <ul class="space-y-space-xs font-body-md text-body-md">
+            <li><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="/docs">API Reference</a></li>
+            <li class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">Model Weights &amp; Benchmarks</li>
+            <li class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">Camera Calibration</li>
+            <li><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="/report">Incident Exporting</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-label-md text-label-md text-on-surface font-semibold mb-space-sm">Operational System</h4>
+          <div class="p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/30 space-y-space-xs">
+            <div class="flex items-center justify-between font-label-sm text-label-sm">
+              <span class="text-on-surface-variant">Latency</span><span class="text-status-success font-semibold">14.2 ms</span>
+            </div>
+            <div class="flex items-center justify-between font-label-sm text-label-sm">
+              <span class="text-on-surface-variant">Core Nodes</span><span class="text-secondary font-semibold">Active (Cluster A)</span>
+            </div>
+            <div class="flex items-center justify-between font-label-sm text-label-sm">
+              <span class="text-on-surface-variant">Deployment</span><span class="text-on-surface">WUIT Hackathon 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pt-space-md flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+        <p class="font-label-sm text-label-sm text-on-surface-variant">© 2026 CyberLeek AI Traffic Systems. Developed for WUIT Hackathon 2026.</p>
+        <div class="flex items-center gap-space-md font-label-sm text-label-sm text-outline">
+          <span class="hover:text-on-surface cursor-pointer">Privacy Policy</span>
+          <span class="hover:text-on-surface cursor-pointer">Terms of Service</span>
+          <span class="hover:text-on-surface cursor-pointer">Security Standards</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <script>
+    // Sahifa routeriga qarab nav elementini aktiv qilish / Mark page nav item as active
+    (function () {
+      var path = window.location.pathname;
+      var key = "landing";
+      if (path.startsWith("/demo")) key = "demo-upload";
+      else if (path.startsWith("/results")) key = "sample-results";
+      else if (path.startsWith("/about")) key = "about-project";
+      else if (path.startsWith("/report")) key = "traffic-report";
+      var active = "bg-primary-container text-on-primary-container font-semibold rounded-lg";
+      document.querySelectorAll("#main-nav a").forEach(function (a) {
+        if (a.getAttribute("data-nav") === key) {
+          a.classList.add(...active.split(" "));
+          a.setAttribute("aria-current", "page");
+        }
+      });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

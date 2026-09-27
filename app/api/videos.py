@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -61,6 +62,39 @@ async def upload_video(
     return VideoResponse.model_validate(video)
 
 
+@router.get("", response_model=list[VideoResponse])
+async def list_videos(
+    limit: int = 50,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """Videolar ro'yxati (dashboard/report uchun) / List videos (newest first)."""
+    result = await db.execute(
+        select(Video).order_by(Video.created_at.desc()).limit(limit).offset(offset)
+    )
+    videos = result.scalars().all()
+    return [VideoResponse.model_validate(v) for v in videos]
+
+
+@router.get("/{video_id}/file")
+async def get_video_file(video_id: str, db: AsyncSession = Depends(get_db)):
+    """Yuklangan video faylni serve qilish (player uchun) / Serve uploaded video file."""
+    result = await db.execute(select(Video).where(Video.id == video_id))
+    video = result.scalar_one_or_none()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    video_path = Path(settings.UPLOAD_DIR) / f"{video_id}.mp4"
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
+
+    return FileResponse(
+        video_path,
+        media_type="video/mp4",
+        filename=video.filename,
+    )
+
+
 @router.get("/{video_id}", response_model=VideoResponse)
 async def get_video(video_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Video).where(Video.id == video_id))
@@ -84,10 +118,11 @@ async def process_video(
     if video.status in ["PROCESSING", "COMPLETED"]:
         raise HTTPException(status_code=400, detail=f"Video already {video.status.lower()}")
 
-    # Create job
+    # Create job (job_id ustuni API javobidagi nomi bilan bir xil qiymatga ega)
     job_id = f"job_{uuid.uuid4().hex[:8]}"
     job = Job(
         id=job_id,
+        job_id=job_id,
         video_id=video_id,
         status="PROCESSING",
         progress=0,
